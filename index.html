@@ -1,0 +1,1795 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Control de Mermas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cabin:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --bg:#F3F5F0; --surface:#FFFFFF; --surface-2:#F6F8F4; --ink:#18241C; --muted:#5D6A60;
+    --line:#DEE5DC; --line-strong:#C4CFC5;
+    --brand:#1F7A37; --brand-deep:#15412A; --brand-soft:#E3F0E5;
+    --wheat:#E4C75B; --wheat-ink:#2A2106; --wheat-on-band:#EAD88E;
+    --warn:#8A5800; --warn-bg:#FFF0D2; --bad:#A3261B; --bad-bg:#FCE6E2;
+    --c-hum:#2A78D6; --c-otras:#B8860B; --c-kg:#1F7A37;
+    --st-good:#0CA30C; --st-warn:#FAB219; --st-none:#A9B2AA;
+    --grid:#E8EDE6; --axis:#C4CFC5;
+    --sans:"Cabin",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    --mono:"IBM Plex Mono",ui-monospace,"Cascadia Mono",Consolas,monospace;
+    color-scheme:light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#0F1511; --surface:#18201A; --surface-2:#1D261F; --ink:#E3EAE4; --muted:#98A69C;
+      --line:#28332B; --line-strong:#38463B;
+      --brand:#4FB468; --brand-deep:#0E2819; --brand-soft:#1A3423;
+      --wheat:#D9BA4A; --wheat-ink:#211A04; --wheat-on-band:#E2CD7C;
+      --warn:#F0B452; --warn-bg:#31260F; --bad:#FF8B7B; --bad-bg:#3A1A16;
+      --c-hum:#3987E5; --c-otras:#B58714; --c-kg:#3A9D52;
+      --st-good:#0CA30C; --st-warn:#FAB219; --st-none:#5C675F;
+      --grid:#253027; --axis:#38463B;
+      color-scheme:dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0F1511; --surface:#18201A; --surface-2:#1D261F; --ink:#E3EAE4; --muted:#98A69C;
+    --line:#28332B; --line-strong:#38463B;
+    --brand:#4FB468; --brand-deep:#0E2819; --brand-soft:#1A3423;
+    --wheat:#D9BA4A; --wheat-ink:#211A04; --wheat-on-band:#E2CD7C;
+    --warn:#F0B452; --warn-bg:#31260F; --bad:#FF8B7B; --bad-bg:#3A1A16;
+    --c-hum:#3987E5; --c-otras:#B58714; --c-kg:#3A9D52;
+    --st-good:#0CA30C; --st-warn:#FAB219; --st-none:#5C675F;
+    --grid:#253027; --axis:#38463B;
+    color-scheme:dark;
+  }
+
+  *,*::before,*::after{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:400 14px/1.5 var(--sans)}
+  [hidden]{display:none!important}
+  :focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+  h2{font:650 16px/1.25 var(--sans);margin:0}
+  .muted{color:var(--muted)}
+  .small{font-size:12px}
+
+  /* ---------- barra de marca ---------- */
+  .appbar{background:var(--brand-deep);color:#fff;padding-block:14px}
+  .bar-in{max-width:1280px;margin:0 auto;padding-inline:clamp(16px,3vw,32px)}
+  .appbar .bar-in{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:14px 24px}
+  .brand{display:flex;align-items:center;gap:16px;min-width:0}
+  .logo{flex:none;display:flex;background:#fff;border-radius:10px;padding:6px 10px}
+  .logo img{display:block;height:46px;width:auto}
+  .eyebrow{font:600 11px/1.2 var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--wheat-on-band)}
+  .brand h1{margin:3px 0 0;font:700 clamp(22px,2.6vw,28px)/1.1 var(--sans);color:#fff}
+  .actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .hint{width:100%;font-size:12px;color:rgba(255,255,255,.75);text-align:right}
+  @media (max-width:560px){ .logo img{height:36px} .brand{gap:12px} }
+
+  .btn{font:600 13.5px/1 var(--sans);border-radius:8px;padding:10px 14px;border:1px solid var(--line-strong);background:var(--surface);color:var(--ink);cursor:pointer;display:inline-flex;align-items:center;gap:8px;text-decoration:none}
+  .btn:hover{border-color:var(--brand)}
+  .btn svg{width:16px;height:16px;flex:none}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  .btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}
+  .btn.primary:hover{filter:brightness(1.08)}
+  .btn.gold{background:var(--wheat);border-color:var(--wheat);color:var(--wheat-ink)}
+  .btn.gold:hover{filter:brightness(1.06)}
+  .btn.onband{background:transparent;border-color:rgba(255,255,255,.4);color:#fff}
+  .btn.onband:hover{border-color:#fff}
+  .btn.armed{border-color:var(--bad);color:var(--bad)}
+  .appbar .btn:focus-visible{outline-color:#fff}
+
+  /* ---------- pestañas ---------- */
+  .tabs{background:var(--surface);border-bottom:1px solid var(--line);position:sticky;top:env(safe-area-inset-top,0px);z-index:5}
+  .tabs .bar-in{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none}
+  .tabs .bar-in::-webkit-scrollbar{display:none}
+  .tab{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:8px;padding:14px 12px 11px;border-bottom:3px solid transparent;font:600 14px/1 var(--sans);color:var(--muted);white-space:nowrap}
+  .tab:hover{color:var(--ink)}
+  .tab svg{width:18px;height:18px;flex:none}
+  .tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--brand)}
+  .tab[aria-selected="true"] svg{color:var(--brand)}
+  .tab:focus-visible{outline:2px solid var(--brand);outline-offset:-3px;border-radius:6px}
+  .badge{font:600 11px/1 var(--mono);padding:3px 7px;border-radius:999px;background:var(--surface-2);color:var(--muted);box-shadow:inset 0 0 0 1px var(--line)}
+  .badge:empty{display:none}
+  .tab[aria-selected="true"] .badge{background:var(--brand-soft);color:var(--brand);box-shadow:none}
+
+  /* ---------- contenido ---------- */
+  .wrap{max-width:1280px;margin:0 auto;padding-inline:clamp(16px,3vw,32px);padding-block:20px 48px;display:grid;gap:18px}
+  .view{display:grid;gap:18px}
+  .intro{margin:0;color:var(--muted);max-width:72ch}
+
+  .notice{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;padding:10px 14px;border-radius:10px;background:var(--warn-bg);font-size:13px}
+  .tag{font:600 10.5px/1 var(--mono);letter-spacing:.07em;text-transform:uppercase;padding:4px 7px;border-radius:5px;background:var(--warn);color:var(--warn-bg)}
+  .linkbtn{all:unset;cursor:pointer;color:var(--brand);font-weight:600;text-decoration:underline;text-underline-offset:3px}
+  .linkbtn:focus-visible{outline:2px solid var(--brand);outline-offset:2px;border-radius:3px}
+
+  .filterbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .filterbar .lbl{font:600 11px/1 var(--sans);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-right:4px}
+  input[type=search],select{font:400 13px/1.2 var(--sans);padding:8px 10px;border:1px solid var(--line-strong);border-radius:8px;background:var(--surface);color:var(--ink);min-width:0;max-width:100%}
+  input[type=search]{width:230px}
+  #fWarn{max-width:260px}
+
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:12px;min-width:0}
+  .card-head{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:baseline;justify-content:space-between;padding:16px 16px 0}
+  .card-head .sub{color:var(--muted);font-size:12.5px}
+  .card-body{padding:12px 16px 16px}
+  .grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+  @media (max-width:900px){.grid2{grid-template-columns:1fr}}
+
+  /* números de cabecera */
+  .kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
+  @media (max-width:1060px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.kpi:first-child{grid-column:1/-1}}
+  .kpi{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:grid;gap:4px;align-content:start}
+  .kpi-label{font:600 11px/1.25 var(--sans);text-transform:uppercase;letter-spacing:.09em;color:var(--muted)}
+  .kpi-value{font:700 clamp(22px,2.4vw,29px)/1.1 var(--sans);overflow-wrap:anywhere}
+  .kpi-sub{font-size:12.5px;color:var(--muted)}
+  .kpi.hl{background:var(--brand-deep);border-color:var(--brand-deep);color:#fff}
+  .kpi.hl .kpi-label{color:var(--wheat-on-band)}
+  .kpi.hl .kpi-sub{color:rgba(255,255,255,.78)}
+
+  /* estado frente a Finnegans */
+  .status-bar{display:flex;gap:2px;height:26px}
+  .status-bar span{display:block;min-width:4px;border-radius:0}
+  .status-bar span:first-child{border-radius:6px 0 0 6px}
+  .status-bar span:last-child{border-radius:0 6px 6px 0}
+  .status-bar span:only-child{border-radius:6px}
+  .status-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:14px}
+  @media (max-width:700px){.status-grid{grid-template-columns:1fr}}
+  .status-item{all:unset;box-sizing:border-box;cursor:pointer;display:grid;gap:2px;padding:10px 12px;border-radius:10px;background:var(--surface-2);box-shadow:inset 0 0 0 1px var(--line)}
+  .status-item:hover{box-shadow:inset 0 0 0 1px var(--line-strong)}
+  .status-item:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+  .status-item .l{display:flex;gap:8px;align-items:center;font-size:13px}
+  .status-item .n{font:700 24px/1.1 var(--sans)}
+  .status-item .p{font-size:12px;color:var(--muted)}
+  .sw{display:inline-block;width:12px;height:12px;border-radius:3px;flex:none}
+
+  /* gráficos */
+  .legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12.5px;color:var(--muted);margin-bottom:6px}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .chart{position:relative;width:100%;min-height:40px}
+  .chart svg{display:block;width:100%;height:auto;overflow:visible;font-family:var(--sans)}
+  .chart .hit{fill:transparent;cursor:default}
+  .chart .hit:hover,.chart .hit:focus{fill:var(--surface-2)}
+  .chart .hit:focus{outline:none}
+  .chart-empty{padding:28px 0;text-align:center;color:var(--muted);font-size:13px}
+  details.twin{border-top:1px solid var(--line)}
+  details.twin summary{cursor:pointer;color:var(--brand);font-weight:600;font-size:13px;padding:10px 16px;list-style-position:inside}
+  details.twin[open] summary{border-bottom:1px solid var(--line)}
+  .tip{position:fixed;z-index:30;pointer-events:none;background:var(--surface);color:var(--ink);border:1px solid var(--line-strong);border-radius:8px;padding:8px 10px;font-size:12.5px;line-height:1.35;box-shadow:0 8px 24px rgba(0,0,0,.14);max-width:280px;display:grid;gap:4px}
+  .tip .t{font-weight:600}
+  .tip .r{display:flex;align-items:center;gap:8px}
+  .tip .key{width:12px;height:3px;border-radius:2px;flex:none}
+  .tip .v{font-weight:700;font-variant-numeric:tabular-nums}
+  .tip .k{color:var(--muted)}
+
+  /* avisos */
+  .alist{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+  .alist button{all:unset;box-sizing:border-box;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:12px;width:100%;padding:10px 12px;border-radius:8px;background:var(--surface-2);box-shadow:inset 0 0 0 1px var(--line)}
+  .alist button:hover{box-shadow:inset 0 0 0 1px var(--line-strong)}
+  .alist button:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+  .alist .cnt{font:700 15px/1 var(--sans);font-variant-numeric:tabular-nums}
+  .alist .go{color:var(--brand);font-size:12.5px;font-weight:600}
+
+  /* carga de archivos */
+  .load{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+  @media (max-width:760px){.load{grid-template-columns:1fr}}
+  .src-box{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:12px}
+  .src-head{display:flex;gap:12px;align-items:flex-start}
+  .src-head p{margin:2px 0 0;color:var(--muted);font-size:13px;max-width:52ch}
+  .step{flex:none;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:var(--brand);color:#fff;font:700 15px/1 var(--sans)}
+  .drop{position:relative;display:grid;gap:6px;place-content:center;justify-items:center;text-align:center;min-height:128px;padding:16px;border:1.5px dashed var(--line-strong);border-radius:10px;background:var(--surface-2);cursor:pointer;transition:border-color .15s,background-color .15s}
+  .drop:hover,.drop.over{border-color:var(--brand);background:var(--brand-soft)}
+  .drop:focus-within{outline:2px solid var(--brand);outline-offset:2px}
+  .drop input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+  .drop svg{width:30px;height:30px;color:var(--brand)}
+  .drop strong{font:600 15px/1.3 var(--sans)}
+  .drop span{color:var(--muted);font-size:12.5px}
+  .src-files{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;max-height:220px;overflow:auto}
+  .file{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;border-radius:8px;background:var(--surface-2)}
+  .file .nm{font-weight:600;overflow-wrap:anywhere;line-height:1.3}
+  .file .meta{color:var(--muted);font-size:12px}
+  .file.err .meta{color:var(--bad)}
+  .file .grain{margin-top:6px;display:flex;align-items:center;gap:6px;color:var(--ink)}
+  .file .grain select{padding:4px 8px;font-size:12px}
+  .x{all:unset;cursor:pointer;flex:none;width:26px;height:26px;border-radius:6px;display:grid;place-items:center;color:var(--muted)}
+  .x:hover{background:var(--bad-bg);color:var(--bad)}
+  .x:focus-visible{outline:2px solid var(--brand)}
+  .chips{display:flex;flex-wrap:wrap;gap:6px}
+  .chip{font-size:12.5px;padding:4px 10px;border-radius:999px;background:var(--surface-2);box-shadow:inset 0 0 0 1px var(--line)}
+  .load-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+
+  /* tablas */
+  .toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .count{font:500 12px/1 var(--mono);color:var(--muted)}
+  .scroll{overflow:auto}
+  .scroll.tall{max-height:70vh}
+  .scroll.mid{max-height:60vh}
+  table{border-collapse:separate;border-spacing:0;width:100%;font-size:13px}
+  th,td{padding:8px 12px;border-bottom:1px solid var(--line);white-space:nowrap;text-align:left;vertical-align:middle}
+  thead th{position:sticky;top:0;z-index:1;background:var(--surface-2);font:600 11px/1.2 var(--sans);text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+  th button{all:unset;cursor:pointer;display:inline-flex;gap:4px;align-items:center}
+  th button:focus-visible{outline:2px solid var(--brand);outline-offset:2px;border-radius:3px}
+  th[aria-sort] button::after{content:"";width:0;height:0;border-inline:4px solid transparent}
+  th[aria-sort="ascending"] button::after{border-bottom:5px solid currentColor}
+  th[aria-sort="descending"] button::after{border-top:5px solid currentColor}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  th.num button{flex-direction:row-reverse}
+  .code{font-family:var(--mono);font-size:12.5px}
+  tbody tr:hover td{background:var(--surface-2)}
+  tr.warn td:first-child{box-shadow:inset 3px 0 0 var(--warn)}
+  tr.bad td:first-child{box-shadow:inset 3px 0 0 var(--bad)}
+  tfoot td{position:sticky;bottom:0;background:var(--surface-2);font-weight:600;border-top:1px solid var(--line-strong);border-bottom:0}
+  .pill{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11.5px;font-weight:600;line-height:1.5;white-space:nowrap}
+  .pill.warn{background:var(--warn-bg);color:var(--warn)}
+  .pill.bad{background:var(--bad-bg);color:var(--bad)}
+  .pill.ok{background:var(--brand-soft);color:var(--brand)}
+  .pill.mute{background:var(--surface-2);color:var(--muted);box-shadow:inset 0 0 0 1px var(--line)}
+  .pills{display:flex;gap:4px;flex-wrap:nowrap}
+  .pend-sum{display:flex;flex-wrap:wrap;gap:6px;padding:12px 16px;border-bottom:1px solid var(--line)}
+  .empty td{text-align:center;color:var(--muted);padding:44px 16px;white-space:normal}
+  .neg{color:var(--bad)}
+  .empty-state{display:grid;justify-items:start;gap:10px;padding:28px 22px}
+  .empty-state p{margin:0;color:var(--muted);max-width:60ch}
+
+  .foot{max-width:1280px;margin:0 auto;padding-inline:clamp(16px,3vw,32px);padding-block:0 28px;color:var(--muted);font-size:12px}
+
+  .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:8px;font-weight:600;font-size:13px;max-width:calc(100% - 32px);opacity:0;pointer-events:none;transition:opacity .2s;z-index:40}
+  .toast.show{opacity:1}
+  @media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+<style>body{margin:0}</style>
+</head>
+<body>
+<header class="appbar">
+  <div class="bar-in">
+    <div class="brand">
+      <span class="logo"><img src="data:image/webp;base64,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" alt="AED y Economart, Grupo Duhau" width="120" height="51"></span>
+      <div>
+        <div class="eyebrow">Grupo Duhau · Granos</div>
+        <h1>Control de Mermas</h1>
+      </div>
+    </div>
+    <div class="actions">
+      <button class="btn gold" id="btnImport" type="button" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+        <span id="btnImportLabel">IMPORTCERT para Finnegans</span>
+      </button>
+      <button class="btn onband" id="btnExport" type="button" disabled><span id="btnExportLabel">Excel de control</span></button>
+      <div class="hint" id="exportHint" hidden></div>
+    </div>
+  </div>
+</header>
+
+<nav class="tabs" aria-label="Secciones">
+  <div class="bar-in" role="tablist">
+    <button class="tab" role="tab" id="tab-resumen" aria-controls="view-resumen" aria-selected="true" data-tab="resumen">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10"/><path d="M10 20V4"/><path d="M16 20v-7"/><path d="M22 20H2"/></svg>
+      Resumen
+    </button>
+    <button class="tab" role="tab" id="tab-cargar" aria-controls="view-cargar" aria-selected="false" data-tab="cargar" tabindex="-1">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="m7 8 5-5 5 5"/><path d="M4 15v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4"/></svg>
+      Cargar archivos <span class="badge" id="bdgCargar"></span>
+    </button>
+    <button class="tab" role="tab" id="tab-cartas" aria-controls="view-cartas" aria-selected="false" data-tab="cartas" tabindex="-1">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 5h18"/><path d="M3 12h18"/><path d="M3 19h18"/></svg>
+      Cartas de porte <span class="badge" id="bdgCartas"></span>
+    </button>
+    <button class="tab" role="tab" id="tab-pendientes" aria-controls="view-pendientes" aria-selected="false" data-tab="pendientes" tabindex="-1">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+      Pendientes Finnegans <span class="badge" id="bdgPend"></span>
+    </button>
+  </div>
+</nav>
+
+<main class="wrap">
+  <div class="notice" id="sampleNote" hidden>
+    <span class="tag">Ejemplo</span>
+    <span>Estás viendo datos de ejemplo. Se reemplazan cuando cargás tu primer archivo.</span>
+    <button class="linkbtn" type="button" data-go="cargar">Cargar archivos</button>
+  </div>
+
+  <div class="filterbar" id="filterbar">
+    <span class="lbl">Filtrar</span>
+    <select id="fEstado" aria-label="Estado en Finnegans" hidden>
+      <option value="">Todas las cartas</option>
+      <option value="si">A certificar</option>
+      <option value="no">No pendientes en Finnegans</option>
+    </select>
+    <select id="fEmp" aria-label="Empresa" hidden></select>
+    <select id="fCli" aria-label="Comprador" hidden></select>
+    <select id="fProd" aria-label="Grano"></select>
+    <select id="fFile" aria-label="Archivo"></select>
+    <button class="linkbtn small" type="button" id="btnReset" hidden>Quitar filtros</button>
+  </div>
+
+  <!-- RESUMEN -->
+  <section class="view" id="view-resumen" role="tabpanel" aria-labelledby="tab-resumen">
+    <div class="card empty-state" id="resEmpty" hidden>
+      <h2>Todavía no hay datos cargados</h2>
+      <p>Cargá el listado de pendientes de Finnegans y las descargas de los compradores. El tablero cruza los CTG y te muestra qué hay que certificar.</p>
+      <button class="btn primary" type="button" data-go="cargar">Ir a Cargar archivos</button>
+    </div>
+    <div id="resBody" class="view">
+      <section class="kpis" id="kpis" aria-label="Números principales"></section>
+
+      <section class="card" id="cardEstado" hidden aria-labelledby="hEstado">
+        <div class="card-head"><h2 id="hEstado">Estado de los pendientes de Finnegans</h2><span class="sub" id="estadoSub"></span></div>
+        <div class="card-body">
+          <div class="status-bar" id="estadoBar" role="img"></div>
+          <div class="status-grid" id="estadoGrid"></div>
+        </div>
+      </section>
+
+      <div class="grid2">
+        <section class="card" aria-labelledby="hGrano">
+          <div class="card-head"><h2 id="hGrano">Merma por grano</h2><span class="sub">% del peso recibido</span></div>
+          <div class="card-body">
+            <div class="legend"><span><i class="sw" style="background:var(--c-hum)"></i>Merma de humedad</span><span><i class="sw" style="background:var(--c-otras)"></i>Otras mermas</span></div>
+            <div class="chart" id="chGrano"></div>
+          </div>
+          <details class="twin"><summary>Ver datos</summary>
+            <div class="scroll"><table><thead><tr><th>Grano</th><th class="num">Cartas</th><th class="num">Kg recibidos</th><th class="num">Humedad prom.</th><th class="num">Merma humedad</th><th class="num">Otras mermas</th><th class="num">Kg finales</th></tr></thead><tbody id="tbGrano"></tbody></table></div>
+          </details>
+        </section>
+        <section class="card" aria-labelledby="hFuente">
+          <div class="card-head"><h2 id="hFuente">Merma por archivo del comprador</h2><span class="sub">% del peso recibido</span></div>
+          <div class="card-body">
+            <div class="legend"><span><i class="sw" style="background:var(--c-hum)"></i>Merma de humedad</span><span><i class="sw" style="background:var(--c-otras)"></i>Otras mermas</span></div>
+            <div class="chart" id="chFuente"></div>
+          </div>
+          <details class="twin"><summary>Ver datos</summary>
+            <div class="scroll"><table><thead><tr><th>Archivo</th><th class="num">Cartas</th><th class="num">Kg recibidos</th><th class="num">Humedad prom.</th><th class="num">Merma humedad</th><th class="num">Otras mermas</th><th class="num">Kg finales</th></tr></thead><tbody id="tbFuente"></tbody></table></div>
+          </details>
+        </section>
+      </div>
+
+      <section class="card" aria-labelledby="hDia">
+        <div class="card-head"><h2 id="hDia">Kg recibidos por día de descarga</h2><span class="sub" id="diaSub"></span></div>
+        <div class="card-body"><div class="chart" id="chDia"></div></div>
+        <details class="twin"><summary>Ver datos</summary>
+          <div class="scroll"><table><thead><tr><th>Fecha</th><th class="num">Cartas</th><th class="num">Kg recibidos</th><th class="num">Merma total</th><th class="num">Kg finales</th></tr></thead><tbody id="tbDia"></tbody></table></div>
+        </details>
+      </section>
+
+      <section class="card" aria-labelledby="hAvisos">
+        <div class="card-head"><h2 id="hAvisos">Para revisar</h2><span class="sub" id="avisosSub"></span></div>
+        <div class="card-body"><ul class="alist" id="avisos"></ul></div>
+      </section>
+    </div>
+  </section>
+
+  <!-- CARGAR -->
+  <section class="view" id="view-cargar" role="tabpanel" aria-labelledby="tab-cargar" hidden>
+    <p class="intro">Cargá los dos archivos: el tablero cruza los CTG, calcula las mermas con la tabla de humedad y arma el IMPORTCERT solo con lo que hay que certificar.</p>
+    <section class="load" aria-label="Carga de archivos">
+      <div class="src-box">
+        <div class="src-head">
+          <span class="step">1</span>
+          <div><h2>Pendientes de Finnegans</h2><p>El Excel con Carta de porte y CTG de lo que falta certificar. Cada vez que cargás uno reemplaza al anterior.</p></div>
+        </div>
+        <label class="drop" data-mode="fin" for="fileFin">
+          <input type="file" id="fileFin" multiple accept=".xlsx,.xls">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h6M12 11v8"/></svg>
+          <strong>Arrastrá o elegí el Excel de Finnegans</strong>
+          <span>.xlsx o .xls</span>
+        </label>
+        <ul class="src-files" id="listFin"></ul>
+      </div>
+      <div class="src-box">
+        <div class="src-head">
+          <span class="step">2</span>
+          <div><h2>Descargas del comprador</h2><p>El Excel que bajás de la página del comprador. Podés cargar varios, de distintos compradores.</p></div>
+        </div>
+        <label class="drop" data-mode="buy" for="fileBuy">
+          <input type="file" id="fileBuy" multiple accept=".xlsx,.xls">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h6M12 11v8"/></svg>
+          <strong>Arrastrá o elegí el Excel del comprador</strong>
+          <span>.xlsx o .xls</span>
+        </label>
+        <ul class="src-files" id="listBuy"></ul>
+      </div>
+    </section>
+    <section class="card" aria-labelledby="hFormatos">
+      <div class="card-head"><h2 id="hFormatos">Formatos que reconoce</h2></div>
+      <div class="card-body">
+        <div class="chips">
+          <span class="chip">Cargill</span><span class="chip">Cargill con hoja Calidad</span><span class="chip">Williams Entregas</span>
+          <span class="chip">Entregas del Sur</span><span class="chip">ACA (agregar columna Grano)</span><span class="chip">La Costa Cereales (IMPORTCERT)</span>
+        </div>
+      </div>
+    </section>
+    <div class="load-actions">
+      <button class="btn primary" type="button" data-go="resumen">Ver el resumen</button>
+      <button class="btn" id="btnClear" type="button">Vaciar todo</button>
+    </div>
+  </section>
+
+  <!-- CARTAS -->
+  <section class="view" id="view-cartas" role="tabpanel" aria-labelledby="tab-cartas" hidden>
+    <section class="card" aria-labelledby="hTbl">
+      <div class="card-head" style="padding-bottom:14px;border-bottom:1px solid var(--line)">
+        <h2 id="hTbl">Cartas de porte</h2>
+        <div class="toolbar">
+          <input type="search" id="fQ" placeholder="Buscar CP o CTG" aria-label="Buscar carta de porte o CTG">
+          <select id="fWarn" aria-label="Avisos"></select>
+          <span class="count" id="rowCount"></span>
+        </div>
+      </div>
+      <div class="scroll tall">
+        <table id="tbl">
+          <thead><tr id="tblHead"></tr></thead>
+          <tbody id="tblBody"></tbody>
+          <tfoot id="tblFoot"></tfoot>
+        </table>
+      </div>
+    </section>
+  </section>
+
+  <!-- PENDIENTES -->
+  <section class="view" id="view-pendientes" role="tabpanel" aria-labelledby="tab-pendientes" hidden>
+    <div class="card empty-state" id="pendEmpty">
+      <h2>No cargaste el listado de Finnegans</h2>
+      <p>Cargá el Excel de pendientes en el cuadro 1 para ver qué cartas todavía no tienen descarga del comprador.</p>
+      <button class="btn primary" type="button" data-go="cargar">Ir a Cargar archivos</button>
+    </div>
+    <section class="card" id="pendPanel" aria-labelledby="hPend" hidden>
+      <div class="card-head" style="padding-bottom:14px">
+        <h2 id="hPend">Pendientes en Finnegans sin descarga del comprador</h2>
+        <span class="count" id="pendCount"></span>
+      </div>
+      <div class="pend-sum" id="pendSum"></div>
+      <div class="scroll mid">
+        <table>
+          <thead><tr id="pendHead"></tr></thead>
+          <tbody id="pendBody"></tbody>
+        </table>
+      </div>
+    </section>
+  </section>
+</main>
+
+<p class="foot">Los archivos se procesan en esta computadora y no se suben a ningún lado. Merma de humedad según la tabla “% de humedad” vigente (con manipuleo).</p>
+
+<div class="tip" id="tip" role="status" hidden></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+(function(){
+  "use strict";
+  var LS = "controlMermas.v1";
+  var $ = function(s){ return document.querySelector(s); };
+
+  var COLS = [
+    {key:"fecha", label:"Fecha Descarga"},
+    {key:"cp", label:"Carta de Porte", cls:"code"},
+    {key:"ctg", label:"CTG", cls:"code"},
+    {key:"prod", label:"Producto"},
+    {key:"origen", label:"Kg Origen", num:true},
+    {key:"hum", label:"% Humedad", num:true},
+    {key:"mh", label:"Kg Merma Humedad", num:true},
+    {key:"fin", label:"Kg Finales", num:true},
+    {key:"otras", label:"Kg Otras Mermas", num:true},
+    {key:"flags", label:"Aviso"}
+  ];
+  var FLAG = {
+    grain:{txt:"Elegí el grano del archivo", cls:"warn"},
+    ctg:{txt:"Sin CTG válido", cls:"warn"},
+    fecha:{txt:"Sin fecha de descarga", cls:"warn"},
+    cp:{txt:"Sin carta de porte", cls:"warn"},
+    mhd:{txt:"Merma de humedad distinta a la tabla", cls:"warn"},
+    dif:{txt:"Difiere de otro archivo", cls:"warn"},
+    tab:{txt:"Humedad fuera de tabla", cls:"warn"},
+    fin:{txt:"Sin kg finales", cls:"warn"},
+    neg:{txt:"Otras mermas negativas", cls:"bad"},
+    cod:{txt:"Grano sin código Finnegans", cls:"warn"}
+  };
+  // Código de producto y dimensión valor en Finnegans, y columna de la tabla de humedad
+  var GRANOS = [
+    {test:function(p){ return p.indexOf("cebada") >= 0 && p.indexOf("cervec") >= 0; }, cod:1178, dim:"COMCEBADACERVECERA", tabla:"cebadacervecera", label:"CEBADA CERVECERA"},
+    {test:function(p){ return p.indexOf("cebada") >= 0 && p.indexOf("forraj") >= 0; }, cod:1934, dim:"COMCEBADAFORRAJERA", tabla:"cebadaforrajera", label:"CEBADA FORRAJERA"},
+    {test:function(p){ return p.indexOf("soja") >= 0; }, cod:31, dim:"COMSOJA", tabla:"soja", label:"SOJA"},
+    {test:function(p){ return p.indexOf("maiz") >= 0; }, cod:68, dim:"COMMAIZ", tabla:"maiz", label:"MAIZ"},
+    {test:function(p){ return p.indexOf("sorgo") >= 0; }, cod:32, dim:"COMSORGO", tabla:"sorgo", label:"SORGO"},
+    {test:function(p){ return p.indexOf("girasol") >= 0; }, cod:71, dim:"COMGIRASOL", tabla:"girasol", label:"GIRASOL"},
+    {test:function(p){ return p.indexOf("trigo") >= 0 && p.indexOf("candeal") < 0; }, cod:72, dim:"COMTRIGOPAN", tabla:"trigo", label:"TRIGO PAN"},
+    {test:function(p){ return p.indexOf("mani") >= 0; }, cod:769, dim:"COMMANI", tabla:"mani", label:"MANI"}
+  ];
+  // Tabla "% de humedad (1)" (28/09/2026): % de merma por grano con el manipuleo incluido,
+  // humedad 9,1 a 25,0 en pasos de 0,1 (índice = humedad*10 - 91)
+  var TABLA_HUMEDAD = {
+    trigo:[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.79,0.91,1.02,1.14,1.26,1.37,1.49,1.6,1.72,1.83,1.95,2.07,2.18,2.3,2.41,2.53,2.64,2.76,2.87,2.99,3.11,3.22,3.34,3.45,3.57,3.68,3.8,3.91,4.03,4.15,4.28,4.38,4.49,4.61,4.72,4.84,4.95,5.07,5.19,5.3,5.42,5.53,5.65,5.76,5.88,6.0,6.11,6.23,6.34,6.46,6.57,6.69,6.81,6.92,7.04,7.15,7.27,7.38,7.5,7.61,7.73,7.85,7.96,8.08,8.19,8.31,8.42,8.54,8.65,8.77,8.89,9.0,9.12,9.23,9.35,9.46,9.58,9.7,9.81,9.93,10.04,10.16,10.27,10.39,10.5,10.62,10.73,10.85,10.97,11.08,11.2,11.31,11.43,11.55,11.66,11.78,11.89,12.01,12.12,12.24,12.35,12.47,12.59,12.7,12.82,12.93,13.05,13.16,13.28,13.39],
+    sorgo:[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,2.1,2.22,2.33,2.45,2.56,2.68,2.79,2.91,3.02,3.14,3.26,3.37,3.49,3.6,3.72,3.83,3.95,4.07,4.18,4.3,4.41,4.53,4.64,4.76,4.87,4.99,5.11,5.22,5.34,5.45,5.57,5.68,5.8,5.91,6.03,6.15,6.26,6.38,6.49,6.61,6.72,6.84,6.96,7.07,7.19,7.3,7.42,7.53,7.65,7.76,7.88,8.0,8.11,8.23,8.34,8.46,8.57,8.69,8.8,8.92,9.04,9.15,9.27,9.38,9.5,9.61,9.73,9.85,9.96,10.08,10.19,10.31,10.42,10.54,10.65,10.77,10.89,11.0,11.12,11.23,11.35,11.46,11.58,11.7,11.81,11.93,12.04,12.16,12.27,12.39,12.5,12.62,12.74,12.85,12.97,13.08,13.2,13.31,13.43,13.54],
+    soja:[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.94,1.05,1.17,1.28,1.4,1.51,1.63,1.74,1.86,1.97,2.09,2.2,2.32,2.43,2.55,2.66,2.78,2.89,3.01,3.12,3.24,3.35,3.47,3.58,3.7,3.81,3.93,4.04,4.16,4.27,4.39,4.5,4.62,4.73,4.85,4.96,5.08,5.19,5.31,5.42,5.54,5.65,5.77,5.88,6.0,6.11,6.23,6.34,6.46,6.57,6.69,6.8,6.92,7.03,7.16,7.26,7.38,7.49,7.61,7.72,7.84,7.95,8.07,8.18,8.3,8.41,8.53,8.64,8.76,8.87,8.99,9.1,9.22,9.33,9.45,9.56,9.68,9.79,9.91,10.02,10.14,10.25,10.36,10.48,10.59,10.71,10.82,10.94,11.05,11.17,11.28,11.4,11.51,11.63,11.74,11.86,11.97,12.09,12.2,12.32,12.43,12.55,12.66,12.78,12.89,13.01,13.12,13.24,13.35,13.47,13.58,13.7,13.81,13.93,14.04],
+    maiz:[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.52,1.64,1.75,1.87,1.98,2.1,2.22,2.33,2.45,2.56,2.68,2.79,2.91,3.02,3.14,3.26,3.37,3.49,3.6,3.72,3.83,3.95,4.07,4.18,4.3,4.41,4.53,4.64,4.76,4.87,4.99,5.11,5.22,5.34,5.45,5.57,5.68,5.8,5.91,6.03,6.15,6.26,6.38,6.49,6.61,6.72,6.84,6.96,7.07,7.19,7.3,7.42,7.53,7.65,7.76,7.88,8.0,8.11,8.23,8.34,8.46,8.57,8.69,8.8,8.92,9.04,9.15,9.27,9.38,9.5,9.61,9.73,9.85,9.96,10.08,10.19,10.31,10.42,10.54,10.65,10.77,10.89,11.0,11.12,11.23,11.35,11.46,11.58,11.7,11.81,11.93,12.04,12.16,12.27,12.39,12.5,12.62,12.74,12.85,12.97,13.08,13.2,13.31,13.43,13.54],
+    mani:[0.91,1.02,1.12,1.23,1.34,1.45,1.56,1.67,1.78,1.89,2.0,2.11,2.22,2.33,2.44,2.55,2.65,2.76,2.87,2.98,3.09,3.2,3.31,3.42,3.53,3.64,3.75,3.86,3.97,4.08,4.18,4.29,4.4,4.51,4.62,4.73,4.84,4.95,5.06,5.17,5.28,5.39,5.5,5.61,5.71,5.82,5.93,6.04,6.15,6.26,6.37,6.48,6.59,6.7,6.81,6.92,7.03,7.14,7.24,7.35,7.46,7.57,7.68,7.79,7.9,8.01,8.12,8.23,8.34,8.45,8.56,8.67,8.77,8.88,8.99,9.1,9.21,9.32,9.43,9.54,9.65,9.76,9.87,9.98,10.09,10.2,10.3,10.41,10.52,10.63,10.74,10.85,10.96,11.07,11.18,11.29,11.4,11.51,11.62,11.73,11.83,11.94,12.05,12.16,12.27,12.38,12.49,12.6,12.71,12.82,12.93,13.04,13.15,13.26,13.36,13.47,13.58,13.69,13.8,13.91,14.02,14.13,14.24,14.35,14.46,14.57,14.68,14.79,14.89,15.0,15.11,15.22,15.33,15.44,15.55,15.66,15.77,15.88,15.99,16.1,16.21,16.32,16.42,16.53,16.64,16.75,16.86,16.97,17.08,17.19,17.3,17.41,17.52,17.63,17.74,17.85,17.95,18.06,18.17,18.28],
+    girasol:[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.87,0.98,1.09,1.21,1.32,1.43,1.54,1.65,1.76,1.88,1.99,2.1,2.21,2.32,2.43,2.55,2.66,2.77,2.88,2.99,3.11,3.22,3.33,3.44,3.55,3.66,3.78,3.89,4.0,4.11,4.22,4.33,4.45,4.56,4.67,4.78,4.89,5.0,5.12,5.23,5.34,5.45,5.56,5.67,5.79,5.9,6.01,6.12,6.23,6.35,6.46,6.57,6.68,6.79,6.9,7.02,7.13,7.24,7.35,7.46,7.57,7.69,7.8,7.91,8.02,8.13,8.24,8.36,8.47,8.58,8.69,8.8,8.92,9.03,9.14,9.25,9.36,9.47,9.59,9.7,9.81,9.92,10.03,10.14,10.26,10.37,10.48,10.59,10.7,10.81,10.93,11.04,11.15,11.26,11.37,11.48,11.6,11.71,11.82,11.93,12.04,12.16,12.27,12.38,12.49,12.6,12.71,12.83,12.94,13.05,13.16,13.27,13.38,13.5,13.61,13.72,13.83,13.94,14.05,14.17,14.28,14.39,14.5,14.61,14.73,14.84,14.95,15.06,15.17,15.28,15.4,15.51,15.62,15.73,15.84,15.95,16.07,16.18,16.29,16.4],
+    cebadaforrajera:[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.89,1.01,1.12,1.24,1.36,1.47,1.59,1.7,1.82,1.93,2.05,2.17,2.28,2.4,2.51,2.63,2.74,2.86,2.97,3.09,3.21,3.32,3.44,3.55,3.67,3.78,3.9,4.02,4.13,4.25,4.36,4.48,4.59,4.71,4.82,4.94,5.06,5.17,5.29,5.4,5.52,5.63,5.75,5.86,5.98,6.1,6.21,6.33,6.44,6.56,6.67,6.79,6.91,7.02,7.14,7.25,7.37,7.48,7.6,7.71,7.83,7.95,8.06,8.18,8.29,8.41,8.52,8.64,8.75,8.87,8.99,9.1,9.22,9.33,9.45,9.56,9.68,9.8,9.91,10.03,10.14,10.26,10.37,10.49,10.6,10.72,10.84,10.95,11.07,11.18,11.3,11.41,11.53,11.65,11.76,11.88,11.99,12.11,12.22,12.34,12.45,12.57,12.69,12.8,12.92,13.03,13.15,13.26,13.38,13.49],
+    cebadacervecera:[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.88,1.0,1.11,1.22,1.339,1.453,1.56,1.677,1.79,1.903,2.017,2.13,2.25,2.357,2.47,2.59,2.7,2.813,2.927,3.04,3.153,3.267,3.38,3.5,3.613,3.72,3.844,3.95,4.06,4.175,4.288,4.4,4.52,4.625,4.75,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2]
+  };
+
+  var SAMPLE = [
+    {fecha:{y:2026,m:9,d:22}, cp:"00001-00012841", ctg:"10135271104", prod:"SOJA POROTO", origen:30120, hum:13.5, mhAc:0,   finAc:30120},
+    {fecha:{y:2026,m:9,d:22}, cp:"00001-00012842", ctg:"10135271388", prod:"SOJA POROTO", origen:29860, hum:14.3, mhAc:520, finAc:29280},
+    {fecha:{y:2026,m:9,d:23}, cp:"00001-00012845", ctg:"10135272010", prod:"MAIZ DURO",   origen:31540, hum:15.8, mhAc:918, finAc:30543},
+    {fecha:{y:2026,m:9,d:23}, cp:"00001-00012846", ctg:"10135272233", prod:"MAIZ DURO",   origen:30980, hum:16.4, mhAc:1115, finAc:29835},
+    {fecha:{y:2026,m:9,d:24}, cp:"00001-00012850", ctg:"10135273417", prod:"SOJA POROTO", origen:28740, hum:12.9, mhAc:0,   finAc:28740},
+    {fecha:{y:2026,m:9,d:24}, cp:"00001-00012851", ctg:"10135273598", prod:"MAIZ DURO",   origen:32110, hum:null, mhAc:null, finAc:32110}
+  ];
+
+  var state = { rows:[], files:[], pend:[], sample:false, sort:{key:"fecha", dir:1} };
+  var matchMap = new Map(); // rowKey -> pendiente de Finnegans
+  var downloads = null, downloadsResolved = false;
+
+  /* ---------- helpers ---------- */
+  var DIACRITICS = new RegExp("[" + String.fromCharCode(0x300) + "-" + String.fromCharCode(0x36f) + "]", "g");
+  function k(s){
+    return String(s == null ? "" : s).normalize("NFD").replace(DIACRITICS, "")
+      .replace(/%/g, "pct").toLowerCase().replace(/[^a-z0-9]+/g, "");
+  }
+  function pick(hk, preds){
+    for (var p = 0; p < preds.length; p++){
+      for (var i = 0; i < hk.length; i++){ if (hk[i] && preds[p](hk[i])) return i; }
+    }
+    return -1;
+  }
+  function toNum(v){
+    if (v == null || v === "") return null;
+    if (typeof v === "number") return isFinite(v) ? v : null;
+    var s = String(v).trim().replace(/%/g, "").replace(/\s/g, "");
+    if (!s) return null;
+    if (/^-?\d{1,3}([.,]\d{3})+$/.test(s)) s = s.replace(/[.,]/g, "");
+    else s = s.replace(",", ".");
+    var n = parseFloat(s);
+    return isFinite(n) ? n : null;
+  }
+  function parseHum(v){
+    if (v == null || v === "") return null;
+    var n;
+    if (typeof v === "number") n = v;
+    else {
+      var s = String(v).trim().replace(/%/g, "").replace(/\s/g, "").replace(",", ".");
+      n = parseFloat(s);
+    }
+    if (!isFinite(n) || n <= 0) return null;
+    if (n < 1) n = n * 100;
+    return n;
+  }
+  // Redondeo hacia arriba a 1 decimal: 14,22 -> 14,3 ; 14,20 -> 14,2
+  function ceil1(h){ var c = Math.round(h * 100); return Math.ceil(c / 10) / 10; }
+  function parseDate(v){
+    if (v == null || v === "") return null;
+    if (typeof v === "number"){
+      var d = XLSX.SSF.parse_date_code(v);
+      return d && d.y >= 2000 ? {y:d.y, m:d.m, d:d.d} : null; // 1/1/1900 = sin fecha
+    }
+    if (v instanceof Date && !isNaN(v)) return {y:v.getFullYear(), m:v.getMonth()+1, d:v.getDate()};
+    var s = String(v).trim(), m;
+    if ((m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/))) return +m[1] >= 2000 ? {y:+m[1], m:+m[2], d:+m[3]} : null;
+    if ((m = s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})/))){
+      var y = +m[3]; if (y < 100) y += 2000;
+      return {y:y, m:+m[2], d:+m[1]};
+    }
+    return null;
+  }
+  function dateKey(o){ return o ? o.y*10000 + o.m*100 + o.d : 0; }
+  function fmtDate(o){ return o ? o.d + "/" + o.m + "/" + String(o.y).slice(-2) : ""; }
+  function dateSerial(o){ return Date.UTC(o.y, o.m-1, o.d) / 864e5 + 25569; }
+  function fmtKg(n){ return n == null ? "" : String(Math.round(n)); }
+  function fmtHum(h){ return h == null ? "" : h.toFixed(1).replace(".", ","); }
+  var nf = new Intl.NumberFormat("es-AR", {maximumFractionDigits:0});
+  function big(n){ return nf.format(Math.round(n || 0)); }
+  function pct(a, b){ return b ? (a / b * 100).toFixed(2).replace(".", ",") + " %" : "–"; }
+  function esc(s){ return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
+  // Lo que no es grano (pellets, fertilizantes) no se certifica
+  var NO_GRANO = /pellet|cascara|urea|arrancador|fertiliz|harina|expeller|aceite/;
+  function grano(prod){
+    var p = k(prod);
+    if (!p || NO_GRANO.test(p)) return null;
+    for (var i = 0; i < GRANOS.length; i++){ if (GRANOS[i].test(p)) return GRANOS[i]; }
+    return null;
+  }
+  function labelPorCodigo(cod){
+    for (var i = 0; i < GRANOS.length; i++){ if (GRANOS[i].cod === cod) return GRANOS[i].label; }
+    return "";
+  }
+  // % de merma según la tabla; 0 por debajo de 9,1; null si la humedad queda fuera de la tabla
+  function mermaPct(g, hum){
+    var col = TABLA_HUMEDAD[g.tabla], i = Math.round(hum * 10) - 91;
+    if (i < 0) return 0;
+    if (i >= col.length) return null;
+    // Fuera de tabla: el % cae respecto de una humedad menor (cebada cervecera arriba de 16 %)
+    for (var j = 0; j < i; j++){ if (col[j] > col[i]) return null; }
+    return col[i];
+  }
+  // Merma de humedad = tabla de humedad (manipuleo incluido), la misma cuenta que hace Finnegans.
+  // MERMAOTROS = lo que falta para llegar a los kg finales del comprador, así Finnegans termina en esos kg.
+  //   mhAc = merma de humedad que informa el comprador · finAc = kg finales informados · otrasDir = otras mermas informadas.
+  function derive(r){
+    var g = grano(r.prod), flags = [], mh = null;
+    if (!g) flags.push(r.prod ? "cod" : "grain");
+    else if (r.hum != null){
+      var p = mermaPct(g, r.hum);
+      if (p == null) flags.push("tab"); else mh = Math.round(r.origen * p / 100);
+    } else mh = 0;
+    // Diferencia de 1 kg con la del comprador = redondeo: se toma la del comprador
+    var dm = mh != null && r.mhAc != null ? r.mhAc - mh : 0;
+    if (Math.abs(dm) === 1){ mh = r.mhAc; dm = 0; }
+    var fin = r.finAc != null ? r.finAc : (r.otrasDir != null && mh != null ? r.origen - mh - r.otrasDir : null);
+    r.mh = mh;
+    r.mhDif = dm !== 0 ? r.mhAc : null;
+    r.fin = fin;
+    r.otras = fin != null && mh != null ? r.origen - mh - fin : null;
+    if (g && fin == null && flags.indexOf("tab") < 0) flags.push("fin");
+    if (r.otras != null && r.otras < 0) flags.push("neg");
+    if (r.mhDif != null) flags.push("mhd");
+    if (!r.ctg) flags.push("ctg");
+    if (!r.fecha) flags.push("fecha");
+    if (!r.cp) flags.push("cp");
+    if (r.otro && r.otro.fin !== fin) flags.push("dif");
+    r.flags = flags;
+    return r;
+  }
+  // Carta de porte siempre como 00001-00011485 (5 + 8 dígitos)
+  function fmtCp(d){
+    if (d.length >= 9 && d.length <= 13){ d = d.padStart(13, "0"); return d.slice(0,5) + "-" + d.slice(5); }
+    return d;
+  }
+  function isCtg(d){ return /^10\d{9}$/.test(d); }
+  function parseCpCtg(cpRaw, ctgRaw){
+    var cp = "", ctg = "";
+    if (ctgRaw != null && ctgRaw !== ""){
+      ctg = typeof ctgRaw === "number" ? String(Math.round(ctgRaw)) : String(ctgRaw).replace(/\D/g, "");
+      if (ctg.length > 11) ctg = ctg.replace(/^0+/, ""); // Finnegans a veces exporta 010135…
+    }
+    var s = cpRaw == null ? "" : (typeof cpRaw === "number" ? String(Math.round(cpRaw)) : String(cpRaw).trim());
+    if (s){
+      var parts = s.split(/[\s\/\-]+/).filter(Boolean).map(function(p){ return p.replace(/\D/g, ""); }).filter(Boolean);
+      var last = parts[parts.length - 1] || "";
+      if (parts.length >= 2 && isCtg(last) && parts.slice(0, -1).join("").length >= 12){
+        // Formato "0000100057283-10126660181": CP + CTG en la misma celda
+        cp = fmtCp(parts.slice(0, -1).join(""));
+        if (!ctg) ctg = last;
+      } else if (parts.length === 1 && isCtg(parts[0])){
+        if (!ctg) ctg = parts[0];
+      } else if (parts.length === 1){
+        cp = fmtCp(parts[0]);
+      } else if (parts.length === 2 && parts[0].length <= 5 && parts[1].length <= 8){
+        cp = parts[0].padStart(5, "0") + "-" + parts[1].padStart(8, "0");
+      } else {
+        cp = s;
+      }
+    }
+    if (!/^1\d{10}$/.test(ctg)) ctg = ""; // un CTG válido tiene 11 dígitos (101…, 102…)
+    return {cp:cp, ctg:ctg};
+  }
+
+  /* ---------- reconocimiento de columnas ---------- */
+  var DESC = {
+    cp:[function(x){ return x.indexOf("cartadeporte") === 0; },
+        function(x){ return ["cp","nrocp","nrocpctg","cpctg","cartaporte","nrocartadeporte"].indexOf(x) >= 0; }],
+    ctg:[function(x){ return x === "ctg"; },
+         function(x){ return ["nroctg","numeroctg","codigoctg"].indexOf(x) >= 0; }],
+    nro:[function(x){ return x.indexOf("nrodescarga") === 0 || x === "numerodescarga" || x === "nrodedescarga"; }],
+    fecha:[function(x){ return x === "fechadescarga" || x === "fechadedescarga"; },
+           function(x){ return x === "fecha"; }],
+    prod:[function(x){ return x === "productos" || x === "producto"; },
+          function(x){ return x.indexOf("producto") === 0 || x === "grano"; }],
+    neto:[function(x){ return x === "pesoneto"; },
+          function(x){ return x === "cantidadorigen"; },
+          function(x){ return ["kgorigen","kgsorigen","netoorigen","neto","kgneto","kgsneto"].indexOf(x) >= 0; }],
+    cert:[function(x){ return x.indexOf("acertificar") >= 0; },
+          function(x){ return ["certificada","kgcertificados","kgscertificados","kgfinales","netocertificado"].indexOf(x) >= 0; }],
+    humPct:[function(x){ return x.indexOf("pct") >= 0 && x.indexOf("hum") >= 0; }],
+    mermaHum:[function(x){ return x === "mermahumedad" || x === "kgmermahumedad"; }]
+  };
+  var MERMA_COLS = ["volatil","zaranda","chamico","mermavolatil","mermazaranda","mermaotros","mermahumedad"];
+  var CAL = {
+    nro: DESC.nro, cp: DESC.cp,
+    tipo:[function(x){ return x.indexOf("tipoan") === 0; }, function(x){ return x === "tipo" || x === "rubro"; }],
+    valor:[function(x){ return x === "valor" || x === "resultado"; }],
+    merma:[function(x){ return x === "merma" || x === "kgmerma" || x === "mermakg"; }]
+  };
+  function mapCols(hk, def){ var m = {}; for (var f in def) m[f] = pick(hk, def[f]); return m; }
+  function detectDesc(aoa){
+    for (var r = 0; r < Math.min(aoa.length, 25); r++){
+      var hk = (aoa[r] || []).map(k), m = mapCols(hk, DESC);
+      if ((m.cp >= 0 || m.ctg >= 0) && m.neto >= 0){
+        if (m.mermaHum < 0 && m.humPct >= 0){
+          var i = hk.indexOf("humedad");
+          if (i >= 0 && i !== m.humPct) m.mermaHum = i;
+        }
+        m.mermas = [];
+        hk.forEach(function(x, i){ if (MERMA_COLS.indexOf(x) >= 0 || i === m.mermaHum) m.mermas.push(i); });
+        return {r:r, m:m};
+      }
+    }
+    return null;
+  }
+  // Reporte de Control de Entregas de Finnegans (traslados de venta)
+  var FIN = {
+    cp: DESC.cp, ctg: DESC.ctg,
+    fecha:[function(x){ return x === "fechadescarga"; }, function(x){ return x === "fecha"; }],
+    cliente:[function(x){ return x === "cliente"; }],
+    empresa:[function(x){ return x === "empresa"; }],
+    prod:[function(x){ return x === "producto"; }],
+    origen:[function(x){ return x === "cantidadorigen"; }],
+    cert:[function(x){ return x === "certificada"; }],
+    nro:[function(x){ return x === "nrocertificado"; }]
+  };
+  function detectFin(aoa){
+    for (var r = 0; r < Math.min(aoa.length, 25); r++){
+      var hk = (aoa[r] || []).map(k), m = mapCols(hk, FIN);
+      if (m.ctg >= 0 && m.cert >= 0 && m.nro >= 0 && m.cliente >= 0) return {r:r, m:m};
+    }
+    return null;
+  }
+  // Listado simple de Finnegans: alcanza con una columna CTG o Carta de porte (el resto es opcional)
+  function detectFinList(aoa){
+    for (var r = 0; r < Math.min(aoa.length, 25); r++){
+      var hk = (aoa[r] || []).map(k), m = mapCols(hk, FIN);
+      if (m.ctg >= 0 || m.cp >= 0) return {r:r, m:m, cols:hk.filter(Boolean).length};
+    }
+    return null;
+  }
+  function processFinnegans(aoa, h, fileName){
+    var m = h.m, out = [], certificadas = 0, emps = new Set();
+    aoa.slice(h.r + 1).forEach(function(row){
+      if (!row) return;
+      var id = parseCpCtg(row[m.cp], row[m.ctg]);
+      if (!id.ctg && !id.cp) return;
+      var emp = m.empresa >= 0 && row[m.empresa] != null ? String(row[m.empresa]).trim() : "";
+      var em = emp.match(/^\(([^)]+)\)/);
+      emp = em ? em[1].toUpperCase() : emp;
+      if (emp) emps.add(emp);
+      var cert = toNum(row[m.cert]), nro = row[m.nro];
+      if ((cert != null && cert !== 0) || (nro != null && String(nro).trim() !== "")){ certificadas++; return; }
+      out.push({
+        cp: id.cp, ctg: id.ctg,
+        fecha: m.fecha >= 0 ? parseDate(row[m.fecha]) : null,
+        cliente: m.cliente >= 0 && row[m.cliente] != null ? String(row[m.cliente]).trim() : "",
+        emp: emp,
+        prod: m.prod >= 0 && row[m.prod] != null ? String(row[m.prod]).trim() : "",
+        origen: m.origen >= 0 ? toNum(row[m.origen]) : null,
+        file: fileName
+      });
+    });
+    return {rows:out, certificadas:certificadas, emps:emps};
+  }
+  function detectCal(aoa){
+    for (var r = 0; r < Math.min(aoa.length, 25); r++){
+      var hk = (aoa[r] || []).map(k), m = mapCols(hk, CAL);
+      if (m.merma >= 0 && m.tipo >= 0 && (m.nro >= 0 || m.cp >= 0)) return {r:r, m:m};
+    }
+    return null;
+  }
+
+  function processWorkbook(wb, fileName){
+    var cache = {};
+    function aoaOf(sn){
+      if (!cache[sn]) cache[sn] = XLSX.utils.sheet_to_json(wb.Sheets[sn], {header:1, raw:true, defval:null, blankrows:false});
+      return cache[sn];
+    }
+    function ordered(name){
+      return wb.SheetNames.slice().sort(function(a, b){ return (k(b) === name) - (k(a) === name); });
+    }
+    var desc = null, cal = null, i, sn, h;
+    var dn = ordered("descargas");
+    for (i = 0; i < dn.length && !desc; i++){ sn = dn[i]; h = detectDesc(aoaOf(sn)); if (h) desc = {aoa:aoaOf(sn), r:h.r, m:h.m}; }
+    var cn = ordered("calidad");
+    for (i = 0; i < cn.length && !cal; i++){ sn = cn[i]; h = detectCal(aoaOf(sn)); if (h) cal = {aoa:aoaOf(sn), r:h.r, m:h.m}; }
+    if (!desc) throw new Error("todavía no reconozco este formato de comprador");
+
+    var calMap = null;
+    if (cal){
+      calMap = new Map();
+      var cm = cal.m;
+      cal.aoa.slice(cal.r + 1).forEach(function(row){
+        if (!row) return;
+        var nro = cm.nro >= 0 && row[cm.nro] != null ? "n:" + String(row[cm.nro]).trim() : "";
+        var cpd = cm.cp >= 0 && row[cm.cp] != null ? String(row[cm.cp]).replace(/\D/g, "") : "";
+        var ck = cpd ? "c:" + cpd : "";
+        if (!nro && !ck) return;
+        var o = (nro && calMap.get(nro)) || (ck && calMap.get(ck));
+        if (!o){ o = {hum:null, humVal:null, total:0}; }
+        if (nro) calMap.set(nro, o);
+        if (ck) calMap.set(ck, o);
+        var merma = toNum(row[cm.merma]) || 0;
+        o.total += merma;
+        if (k(row[cm.tipo]) === "humedad"){
+          o.hum = (o.hum || 0) + merma;
+          var v = cm.valor >= 0 ? parseHum(row[cm.valor]) : null;
+          if (v != null) o.humVal = v;
+        }
+      });
+    }
+
+    var m = desc.m, out = [];
+    desc.aoa.slice(desc.r + 1).forEach(function(row){
+      if (!row) return;
+      var cpRaw = m.cp >= 0 ? row[m.cp] : null, ctgRaw = m.ctg >= 0 ? row[m.ctg] : null;
+      var id = parseCpCtg(cpRaw, ctgRaw);
+      if (!id.cp && !id.ctg) return;
+      var origen = toNum(row[m.neto]);
+      if (origen == null || origen <= 0) return;
+      var prod = m.prod >= 0 && row[m.prod] != null ? String(row[m.prod]).trim() : "";
+      if (NO_GRANO.test(k(prod))) return;
+      var nro = m.nro >= 0 && row[m.nro] != null ? String(row[m.nro]).trim() : "";
+      var cpd = cpRaw == null ? "" : String(cpRaw).replace(/\D/g, "");
+      var c = calMap ? ((nro && calMap.get("n:" + nro)) || (cpd && calMap.get("c:" + cpd)) || null) : null;
+
+      var humRaw = m.humPct >= 0 ? parseHum(row[m.humPct]) : null;
+      if (humRaw == null && c && c.humVal != null) humRaw = c.humVal;
+      var hum = humRaw == null ? null : ceil1(humRaw);
+
+      var mh = null;
+      if (c && c.hum != null) mh = c.hum;
+      else if (m.mermaHum >= 0) mh = toNum(row[m.mermaHum]);
+
+      var fin = null;
+      if (m.cert >= 0){
+        fin = toNum(row[m.cert]);
+        if (fin === 0 && origen > 0) fin = null; // todavía sin certificar
+      } else if (c){
+        fin = origen - c.total;
+      } else if (m.mermas.length){
+        fin = origen - m.mermas.reduce(function(s, i){ return s + (toNum(row[i]) || 0); }, 0);
+      }
+      out.push(derive({
+        fecha: m.fecha >= 0 ? parseDate(row[m.fecha]) : null,
+        cp: id.cp, ctg: id.ctg,
+        prod: prod,
+        origen: Math.round(origen), hum: hum,
+        mhAc: mh == null ? null : Math.round(mh),
+        finAc: fin == null ? null : Math.round(fin),
+        file: fileName
+      }));
+    });
+    return {rows:out, hasCal:!!cal, buyerLike:!!cal || desc.m.humPct >= 0, fmt:cal ? "Cargill con hoja Calidad" : "Descargas"};
+  }
+
+  /* ---------- perfiles de compradores ---------- */
+  // Cada perfil reconoce el encabezado de su Excel y dice en qué columna está cada dato.
+  // origen = kg recibidos · fin = kg finales del comprador · hum = % humedad · mhAc = merma de humedad del comprador
+  // otras = otras mermas informadas (cuando el comprador no da kg finales) · code = código de producto Finnegans
+  function has(hk, x){ return hk.indexOf(x) >= 0; }
+  var PERFILES = [
+    {name:"IMPORTCERT (La Costa Cereales)",
+     test:function(hk){ return has(hk, "cantidadrecibida") && has(hk, "mermaotros"); },
+     cols:function(hk){ return {cp:hk.indexOf("cartaporte"), ctg:hk.indexOf("ctg"), fecha:hk.indexOf("fecha"), code:hk.indexOf("producto"),
+       origen:hk.indexOf("cantidadrecibida"), hum:hk.indexOf("humedad"), otras:hk.indexOf("mermaotros")}; }},
+    {name:"Williams Entregas",
+     test:function(hk){ return has(hk, "mermafisicaxhd") && has(hk, "netofinal"); },
+     // Trae dos columnas "Neto Final": la primera es lo recibido, la última lo que queda después de mermas
+     cols:function(hk){ return {cp:hk.indexOf("cartaporte"), ctg:hk.indexOf("ctg"), fecha:hk.indexOf("fechadedescarga"), prod:hk.indexOf("producto"),
+       origen:hk.indexOf("netofinal"), fin:hk.lastIndexOf("netofinal"), hum:hk.indexOf("hd"), mhAc:hk.indexOf("mermafisicaxhd")}; }},
+    {name:"Entregas del Sur",
+     test:function(hk){ return has(hk, "cporte") && has(hk, "hdad"); },
+     cols:function(hk){ return {cp:hk.indexOf("cporte"), ctg:hk.indexOf("ctg"), fecha:hk.indexOf("fecha"), prod:hk.indexOf("cereal"),
+       origen:hk.indexOf("neto"), hum:hk.indexOf("hdad"), otras:hk.indexOf("merm")}; }},
+    {name:"ACA", needsGrain:true,
+     test:function(hk){ return has(hk, "kgnetossm") && has(hk, "ctg"); },
+     cols:function(hk){ return {cp:hk.indexOf("cartadeporte"), ctg:hk.indexOf("ctg"), fecha:hk.indexOf("fecha"),
+       origen:hk.indexOf("kgnetos"), fin:hk.indexOf("kgnetossm"), hum:hk.indexOf("pcthum"), mhAc:hk.indexOf("kghum")}; }},
+    {name:"Cargill",
+     test:function(hk){ return has(hk, "pesonetoacertificar") && has(hk, "humedadpct") && has(hk, "ctg"); },
+     cols:function(hk){ return {cp:pick(hk, [function(x){ return x.indexOf("cartadeporte") === 0; }]), ctg:hk.indexOf("ctg"), fecha:hk.indexOf("fechadescarga"),
+       prod:hk.indexOf("producto"), origen:hk.indexOf("pesoneto"), fin:hk.indexOf("pesonetoacertificar"), hum:hk.indexOf("humedadpct"), mhAc:hk.indexOf("humedad")}; }}
+  ];
+  function findPerfil(aoa){
+    for (var r = 0; r < Math.min(aoa.length, 30); r++){
+      var hk = (aoa[r] || []).map(k);
+      for (var i = 0; i < PERFILES.length; i++){
+        if (PERFILES[i].test(hk)){
+          var m = PERFILES[i].cols(hk);
+          // Si al Excel le agregaron a mano una columna con el grano (ej. ACA), se usa
+          if (!(m.prod >= 0) && !(m.code >= 0)){
+            m.prod = pick(hk, [function(x){ return ["grano","producto","productos","cereal","especie"].indexOf(x) >= 0; }]);
+          }
+          return {r:r, P:PERFILES[i], m:m};
+        }
+      }
+    }
+    return null;
+  }
+  function parsePerfil(aoa, h, fileName){
+    var m = h.m, out = [];
+    function val(key){ return function(row){ return m[key] >= 0 ? row[m[key]] : null; }; }
+    var get = {cp:val("cp"), ctg:val("ctg"), fecha:val("fecha"), prod:val("prod"), code:val("code"), origen:val("origen"),
+               fin:val("fin"), hum:val("hum"), mhAc:val("mhAc"), otras:val("otras")};
+    aoa.slice(h.r + 1).forEach(function(row){
+      if (!row) return;
+      var id = parseCpCtg(get.cp(row), get.ctg(row));
+      if (!id.cp && !id.ctg) return;
+      var origen = toNum(get.origen(row));
+      if (origen == null || origen <= 0) return; // todavía no descargó
+      var prod = get.prod(row) != null ? String(get.prod(row)).trim() : "";
+      if (!prod && m.code >= 0) prod = labelPorCodigo(toNum(get.code(row)));
+      if (NO_GRANO.test(k(prod))) return;
+      var hum = parseHum(get.hum(row));
+      var fin = m.fin >= 0 ? toNum(get.fin(row)) : null;
+      if (fin === 0) fin = null;
+      var mhAc = m.mhAc >= 0 ? toNum(get.mhAc(row)) : null;
+      out.push(derive({
+        fecha: parseDate(get.fecha(row)), cp: id.cp, ctg: id.ctg, prod: prod, noProd: !prod,
+        origen: Math.round(origen), hum: hum == null ? null : ceil1(hum),
+        mhAc: mhAc == null ? null : Math.round(mhAc),
+        finAc: fin == null ? null : Math.round(fin),
+        otrasDir: m.otras >= 0 ? Math.round(toNum(get.otras(row)) || 0) : null,
+        file: fileName
+      }));
+    });
+    return out;
+  }
+  // Descargas de un comprador: cada solapa que coincide con un perfil suma sus cartas; si ninguna coincide, lectura genérica
+  function processBuyer(wb, fileName){
+    var rows = [], fmts = [], needsGrain = false;
+    wb.SheetNames.forEach(function(sn){
+      var aoa = XLSX.utils.sheet_to_json(wb.Sheets[sn], {header:1, raw:true, defval:null, blankrows:false});
+      var h = findPerfil(aoa);
+      if (!h) return;
+      Array.prototype.push.apply(rows, parsePerfil(aoa, h, fileName));
+      if (fmts.indexOf(h.P.name) < 0) fmts.push(h.P.name);
+      if (h.P.needsGrain) needsGrain = true;
+    });
+    if (fmts.length) return {rows:rows, hasCal:true, buyerLike:true, fmt:fmts.join(" + "), needsGrain:needsGrain && rows.some(function(r){ return r.noProd; })};
+    return processWorkbook(wb, fileName);
+  }
+
+  /* ---------- estado ---------- */
+  // Un camión se identifica por su CTG (la carta de porte cambia de formato según quién la informa)
+  function rowKey(r){ return r.ctg ? "t:" + r.ctg : "c:" + cpDigits(r.cp); }
+  function load(){
+    try {
+      var j = JSON.parse(localStorage.getItem(LS) || "null");
+      if (j && ((Array.isArray(j.rows) && j.rows.length) || (Array.isArray(j.pend) && j.pend.length))){
+        state.rows = (j.rows || []).map(function(r){
+          if (r.mhAc === undefined) r.mhAc = r.mh; // filas guardadas antes de usar la tabla de humedad
+          if (r.finAc === undefined) r.finAc = r.fin; // filas guardadas antes de los perfiles por comprador
+          return derive(r);
+        });
+        state.pend = j.pend || [];
+        state.files = j.files || [];
+        return;
+      }
+    } catch(e){}
+    state.rows = SAMPLE.map(function(r){ return derive(Object.assign({file:"Ejemplo"}, r)); });
+    state.files = [];
+    state.sample = true;
+  }
+  function persist(){
+    if (state.sample) return;
+    try { localStorage.setItem(LS, JSON.stringify({rows:state.rows, pend:state.pend, files:state.files})); } catch(e){}
+  }
+  function clearSample(){
+    if (state.sample){ state.rows = []; state.files = []; state.pend = []; state.sample = false; }
+  }
+  // El primer listado de Finnegans de cada carga reemplaza a los anteriores; los demás de la misma carga se suman
+  function addPend(res, fileName, fresh){
+    clearSample();
+    if (fresh){
+      state.pend = [];
+      state.files = state.files.filter(function(f){ return !f.fin; });
+    }
+    state.pend = state.pend.filter(function(p){ return p.file !== fileName; });
+    // Una carta que ya está en otro listado de la misma carga se cuenta una sola vez
+    var clave = function(p){ return p.ctg ? "t:" + p.ctg : "c:" + cpDigits(p.cp); };
+    var vistos = new Set(state.pend.map(clave)), repetidas = 0;
+    res.rows.forEach(function(p){
+      var kk = clave(p);
+      if (vistos.has(kk)){ repetidas++; return; }
+      vistos.add(kk); state.pend.push(p);
+    });
+    state.files = state.files.filter(function(f){ return !(f.fin && f.name === fileName); });
+    state.files.push({name:fileName, fin:true, count:res.rows.length, repetidas:repetidas, certificadas:res.certificadas, emps:Array.from(res.emps).sort()});
+  }
+  function addRows(rows, fileName, info){
+    clearSample();
+    var idx = new Map(state.rows.map(function(r, i){ return [rowKey(r), i]; }));
+    var added = 0, replaced = 0, dup = 0;
+    rows.forEach(function(r){
+      var kk = rowKey(r);
+      if (!idx.has(kk)){ idx.set(kk, state.rows.length); state.rows.push(r); added++; return; }
+      var i = idx.get(kk), old = state.rows[i];
+      if (old.file === fileName){ state.rows[i] = r; replaced++; return; }
+      // El mismo camión en dos archivos (entregador y comprador): gana el que informa kg finales
+      dup++;
+      var keepNew = r.finAc != null || old.finAc == null;
+      var win = keepNew ? r : old, lose = keepNew ? old : r;
+      win.otro = lose.fin != null ? {file:lose.file, fin:lose.fin} : null;
+      state.rows[i] = derive(win);
+    });
+    state.files = state.files.filter(function(f){ return f.name !== fileName; });
+    state.files.push({name:fileName, count:rows.length, added:added, replaced:replaced, dup:dup, noCal:!info.hasCal, fmt:info.fmt || "", needsGrain:!!info.needsGrain, grain:""});
+  }
+
+  /* ---------- cruce con Finnegans ---------- */
+  function cpDigits(cp){ return String(cp || "").replace(/\D/g, ""); }
+  function computeMatches(){
+    matchMap = new Map();
+    if (!state.pend.length) return;
+    var byCtg = new Map(), byCp = new Map();
+    state.pend.forEach(function(p){
+      if (p.ctg) byCtg.set(p.ctg, p);
+      if (p.cp) byCp.set(cpDigits(p.cp), p);
+    });
+    state.rows.forEach(function(r){
+      var p = r.ctg ? byCtg.get(r.ctg) : (r.cp ? byCp.get(cpDigits(r.cp)) : null);
+      if (p) matchMap.set(rowKey(r), p);
+    });
+  }
+  function matchOf(r){ return matchMap.get(rowKey(r)) || null; }
+  function hasPend(){ return state.pend.length > 0 || state.files.some(function(f){ return f.fin; }); }
+
+  /* ---------- filtros y orden ---------- */
+  // soloGlobales: solo los filtros de arriba (resumen y exportación); sin la búsqueda ni el filtro de avisos de la tabla
+  function filtered(soloGlobales){
+    var q = soloGlobales ? "" : $("#fQ").value.trim().toLowerCase().replace(/[\s\-]/g, "");
+    var fp = $("#fProd").value, ff = $("#fFile").value, fw = soloGlobales ? "" : $("#fWarn").value;
+    var fe = hasPend() ? $("#fEstado").value : "", fm = hasPend() ? $("#fEmp").value : "", fc = hasPend() ? $("#fCli").value : "";
+    var list = state.rows.filter(function(r){
+      var mt = matchOf(r);
+      if (fe === "si" && !mt) return false;
+      if (fe === "no" && mt) return false;
+      if (fm && (!mt || mt.emp !== fm)) return false;
+      if (fc && (!mt || mt.cliente !== fc)) return false;
+      if (fp && granoDe(r) !== fp) return false;
+      if (ff && r.file !== ff) return false;
+      if (fw === "ok" && !exportable(r)) return false;
+      if (fw === "block" && exportable(r)) return false;
+      if (fw === "any" && !r.flags.length) return false;
+      if (fw && ["ok", "block", "any"].indexOf(fw) < 0 && r.flags.indexOf(fw) < 0) return false;
+      if (q){
+        var hay = (r.cp + r.ctg).toLowerCase().replace(/[\s\-]/g, "");
+        if (hay.indexOf(q) < 0) return false;
+      }
+      return true;
+    });
+    var s = state.sort;
+    list.sort(function(a, b){
+      var va, vb;
+      if (s.key === "fecha"){ va = dateKey(a.fecha); vb = dateKey(b.fecha); }
+      else if (s.key === "flags"){ va = a.flags.length; vb = b.flags.length; }
+      else if (s.key === "estado"){ va = matchOf(a) ? 1 : 0; vb = matchOf(b) ? 1 : 0; }
+      else { va = a[s.key]; vb = b[s.key]; }
+      if (va == null) va = typeof vb === "string" ? "" : -Infinity;
+      if (vb == null) vb = typeof va === "string" ? "" : -Infinity;
+      var c = typeof va === "string" ? va.localeCompare(vb, "es") : va - vb;
+      if (!c) c = a.cp.localeCompare(b.cp);
+      return c * s.dir;
+    });
+    return list;
+  }
+  function sums(list){
+    var t = {n:list.length, origen:0, mh:0, mhAc:0, fin:0, otras:0, warn:0, humW:0, humKg:0};
+    list.forEach(function(r){
+      t.origen += r.origen || 0; t.mh += r.mh || 0; t.mhAc += r.mhAc || 0; t.fin += r.fin || 0; t.otras += r.otras || 0;
+      if (r.flags.length) t.warn++;
+      if (r.hum != null){ t.humW += r.hum * r.origen; t.humKg += r.origen; }
+    });
+    return t;
+  }
+
+  /* ---------- render ---------- */
+  var SVGNS = "http://www.w3.org/2000/svg";
+  function svg(tag, attrs, parent){
+    var el = document.createElementNS(SVGNS, tag);
+    for (var a in attrs){
+      if (a === "text") el.textContent = attrs[a];
+      else el.setAttribute(a, attrs[a]);
+    }
+    if (parent) parent.appendChild(el);
+    return el;
+  }
+  function fillSelect(sel, values, allLabel){
+    var cur = sel.value;
+    sel.innerHTML = '<option value="">' + esc(allLabel) + "</option>" + values.map(function(v){ return '<option value="' + esc(v) + '">' + esc(v) + "</option>"; }).join("");
+    sel.value = values.indexOf(cur) >= 0 ? cur : "";
+  }
+  function titleCase(s){ return String(s || "").toLowerCase().replace(/(^|\s)\S/g, function(c){ return c.toUpperCase(); }); }
+  function granoDe(r){ var g = grano(r.prod); return g ? titleCase(g.label) : (r.prod ? titleCase(r.prod) : "Sin grano"); }
+  var fileInfo = new Map();
+  function fuenteDe(r){ var f = fileInfo.get(r.file); return (f && f.fmt) || String(r.file || "").replace(/\.xlsx?$/i, ""); }
+  function pctNum(a, b){ return b ? a / b * 100 : 0; }
+  function decFor(step){ return step >= 1 ? 0 : (Math.abs(step * 10 - Math.round(step * 10)) < 1e-9 ? 1 : 2); }
+  function fmtPct(v, dec){ return v.toFixed(dec == null ? 2 : dec).replace(".", ",") + " %"; }
+  function niceStep(raw){
+    if (!(raw > 0)) return 1;
+    var e = Math.pow(10, Math.floor(Math.log10(raw))), f = raw / e;
+    return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 2.5 ? 2.5 : f <= 5 ? 5 : 10) * e;
+  }
+  function group(list, keyFn){
+    var m = new Map();
+    list.forEach(function(r){ var key = keyFn(r); if (!m.has(key)) m.set(key, []); m.get(key).push(r); });
+    return m;
+  }
+  function fitText(node, maxW){
+    var s = node.textContent;
+    if (!node.getComputedTextLength || node.getComputedTextLength() <= maxW) return;
+    var title = document.createElementNS(SVGNS, "title"); title.textContent = s;
+    while (s.length > 3 && node.getComputedTextLength() > maxW){ s = s.slice(0, -1); node.textContent = s + "…"; }
+    node.appendChild(title);
+  }
+
+  /* tooltip: acompaña, nunca es el único lugar donde está el dato (cada gráfico tiene su tabla) */
+  var tipEl = $("#tip");
+  function tipShow(x, y, title, rows){
+    tipEl.replaceChildren();
+    var t = document.createElement("div"); t.className = "t"; t.textContent = title; tipEl.appendChild(t);
+    rows.forEach(function(r){
+      var d = document.createElement("div"); d.className = "r";
+      if (r.color){ var key = document.createElement("span"); key.className = "key"; key.style.background = r.color; d.appendChild(key); }
+      var v = document.createElement("span"); v.className = "v"; v.textContent = r.v; d.appendChild(v);
+      var kk = document.createElement("span"); kk.className = "k"; kk.textContent = r.k; d.appendChild(kk);
+      tipEl.appendChild(d);
+    });
+    tipEl.hidden = false;
+    var w = tipEl.offsetWidth, h = tipEl.offsetHeight, px = x + 14, py = y + 14;
+    if (px + w > window.innerWidth - 8) px = x - w - 14;
+    if (py + h > window.innerHeight - 8) py = y - h - 14;
+    tipEl.style.left = Math.max(8, px) + "px";
+    tipEl.style.top = Math.max(8, py) + "px";
+  }
+  function tipHide(){ tipEl.hidden = true; }
+  function bindTip(node, fn){
+    node.addEventListener("pointermove", function(e){ var d = fn(); tipShow(e.clientX, e.clientY, d.title, d.rows); });
+    node.addEventListener("pointerleave", tipHide);
+    node.addEventListener("focus", function(){ var b = node.getBoundingClientRect(), d = fn(); tipShow(b.left + Math.min(b.width, 240) / 2, b.bottom - 6, d.title, d.rows); });
+    node.addEventListener("blur", tipHide);
+  }
+
+  /* barras horizontales apiladas: merma de humedad + otras mermas, en % del peso recibido */
+  function barEnd(x, y, w, h, r){
+    r = Math.max(0, Math.min(r, w, h / 2));
+    return "M" + x + "," + y + "h" + (w - r) + "a" + r + "," + r + " 0 0 1 " + r + "," + r + "v" + (h - 2 * r) +
+      "a" + r + "," + r + " 0 0 1 " + (-r) + "," + r + "h" + (-(w - r)) + "z";
+  }
+  function hbarChart(el, rows, what){
+    el.replaceChildren();
+    if (!rows.length){ var e = document.createElement("div"); e.className = "chart-empty"; e.textContent = "Sin datos para mostrar."; el.appendChild(e); return; }
+    var W = Math.max(el.clientWidth, 280), labelW = Math.min(170, Math.round(W * 0.36)), endW = 60;
+    var rowH = 42, barH = 18, top = 4, axisH = 22, H = top + rows.length * rowH + axisH;
+    var plotW = W - labelW - endW;
+    var maxT = Math.max.apply(null, rows.map(function(r){ return r.pH + r.pO; }));
+    var step = niceStep(maxT / 4), max = Math.max(step, Math.ceil(maxT / step - 1e-9) * step), dec = decFor(step);
+    function x(v){ return labelW + v / max * plotW; }
+    var s = svg("svg", {viewBox:"0 0 " + W + " " + H, width:W, height:H, role:"img",
+      "aria-label":"Merma por " + what + ": " + rows.map(function(r){ return r.label + " " + fmtPct(r.pH + r.pO, 1); }).join(", ")}, el);
+    for (var v = 0; v <= max + 1e-9; v += step){
+      var gx = Math.round(x(v)) + 0.5;
+      svg("line", {x1:gx, x2:gx, y1:top, y2:H - axisH, style:"stroke:var(" + (v === 0 ? "--axis" : "--grid") + ");stroke-width:1"}, s);
+      svg("text", {x:gx, y:H - 6, "text-anchor":"middle", style:"fill:var(--muted);font-size:11px", text:fmtPct(v, dec)}, s);
+    }
+    rows.forEach(function(r, i){
+      var y0 = top + i * rowH, by = y0 + 6;
+      var hit = svg("rect", {"class":"hit", x:0, y:y0 + 1, width:W, height:rowH - 2, rx:6, tabindex:0,
+        "aria-label":r.label + ": merma de humedad " + fmtPct(r.pH) + ", otras mermas " + fmtPct(r.pO)}, s);
+      var name = svg("text", {x:labelW - 12, y:by + 12, "text-anchor":"end", style:"fill:var(--ink);font-size:13px;font-weight:600;pointer-events:none", text:r.label}, s);
+      fitText(name, labelW - 18);
+      var sub = svg("text", {x:labelW - 12, y:by + 27, "text-anchor":"end", style:"fill:var(--muted);font-size:11px;pointer-events:none",
+        text:r.n + (r.n === 1 ? " carta" : " cartas")}, s);
+      fitText(sub, labelW - 18);
+      var x0 = x(0), wH = r.pH / max * plotW, wO = r.pO / max * plotW;
+      if (wH > 0 && wO > 0){
+        svg("rect", {x:x0, y:by, width:Math.max(wH - 1, 1), height:barH, style:"fill:var(--c-hum);pointer-events:none"}, s);
+        svg("path", {d:barEnd(x0 + wH + 1, by, Math.max(wO - 1, 1), barH, 4), style:"fill:var(--c-otras);pointer-events:none"}, s);
+      } else if (wH > 0){
+        svg("path", {d:barEnd(x0, by, wH, barH, 4), style:"fill:var(--c-hum);pointer-events:none"}, s);
+      } else if (wO > 0){
+        svg("path", {d:barEnd(x0, by, wO, barH, 4), style:"fill:var(--c-otras);pointer-events:none"}, s);
+      }
+      svg("text", {x:x(r.pH + r.pO) + 6, y:by + 13, style:"fill:var(--ink);font-size:12px;font-weight:600;pointer-events:none", text:fmtPct(r.pH + r.pO, 1)}, s);
+      bindTip(hit, function(){
+        return {title:r.label + " · " + r.n + (r.n === 1 ? " carta" : " cartas"), rows:[
+          {color:"var(--c-hum)", v:fmtPct(r.pH), k:"merma de humedad · " + big(r.mh) + " kg"},
+          {color:"var(--c-otras)", v:fmtPct(r.pO), k:"otras mermas · " + big(r.otras) + " kg"},
+          {v:big(r.origen) + " kg", k:"recibidos"}
+        ]};
+      });
+    });
+  }
+
+  /* columnas: kg recibidos por día de descarga (una sola serie) */
+  function colTop(x, y, w, h, r){
+    r = Math.max(0, Math.min(r, w / 2, h));
+    return "M" + x + "," + (y + h) + "V" + (y + r) + "a" + r + "," + r + " 0 0 1 " + r + "," + (-r) + "H" + (x + w - r) +
+      "a" + r + "," + r + " 0 0 1 " + r + "," + r + "V" + (y + h) + "z";
+  }
+  function colChart(el, pts){
+    el.replaceChildren();
+    if (!pts.length){ var e = document.createElement("div"); e.className = "chart-empty"; e.textContent = "Sin fechas de descarga para mostrar."; el.appendChild(e); return; }
+    var W = Math.max(el.clientWidth, 280), H = 240, padL = 58, padR = 8, top = 24, axisH = 26;
+    var plotW = W - padL - padR, plotH = H - top - axisH;
+    var maxV = Math.max.apply(null, pts.map(function(p){ return p.origen; }));
+    var step = niceStep(maxV / 4), max = Math.max(step, Math.ceil(maxV / step - 1e-9) * step);
+    function y(v){ return top + plotH - v / max * plotH; }
+    var s = svg("svg", {viewBox:"0 0 " + W + " " + H, width:W, height:H, role:"img",
+      "aria-label":"Kg recibidos por día: " + pts.length + " días, máximo " + big(maxV) + " kg"}, el);
+    for (var v = 0; v <= max + 1e-9; v += step){
+      var gy = Math.round(y(v)) + 0.5;
+      svg("line", {x1:padL, x2:W - padR, y1:gy, y2:gy, style:"stroke:var(" + (v === 0 ? "--axis" : "--grid") + ");stroke-width:1"}, s);
+      svg("text", {x:padL - 8, y:gy + 4, "text-anchor":"end", style:"fill:var(--muted);font-size:11px", text:nf.format(Math.round(v / 1000)) + " t"}, s);
+    }
+    var band = plotW / pts.length, bw = Math.min(24, Math.max(2, band * 0.64));
+    var every = Math.max(1, Math.ceil(46 / band)), imax = 0;
+    pts.forEach(function(p, i){ if (p.origen > pts[imax].origen) imax = i; });
+    pts.forEach(function(p, i){
+      var cx = padL + band * i + band / 2;
+      var hit = svg("rect", {"class":"hit", x:padL + band * i, y:top, width:band, height:plotH, rx:4, tabindex:0,
+        "aria-label":fmtDate(p.fecha) + ": " + big(p.origen) + " kg recibidos"}, s);
+      var hh = Math.max(p.origen / max * plotH, p.origen > 0 ? 1 : 0);
+      if (hh > 0) svg("path", {d:colTop(cx - bw / 2, top + plotH - hh, bw, hh, 4), style:"fill:var(--c-kg);pointer-events:none"}, s);
+      if (i % every === 0) svg("text", {x:cx, y:H - 8, "text-anchor":"middle", style:"fill:var(--muted);font-size:11px;pointer-events:none", text:p.fecha.d + "/" + p.fecha.m}, s);
+      if (i === imax) svg("text", {x:cx, y:top + plotH - hh - 7, "text-anchor":"middle", style:"fill:var(--ink);font-size:11.5px;font-weight:600;pointer-events:none", text:nf.format(Math.round(p.origen / 1000)) + " t"}, s);
+      bindTip(hit, function(){
+        return {title:fmtDate(p.fecha), rows:[
+          {color:"var(--c-kg)", v:big(p.origen) + " kg", k:"recibidos"},
+          {v:String(p.n), k:p.n === 1 ? "carta de porte" : "cartas de porte"},
+          {v:fmtPct(pctNum(p.merma, p.origen)), k:"merma total"}
+        ]};
+      });
+    });
+  }
+
+  function mermaRows(groups){
+    return Array.from(groups.entries()).map(function(e){
+      var t = sums(e[1]);
+      return {label:e[0], n:t.n, origen:t.origen, mh:t.mh, otras:t.otras, fin:t.fin, humProm:t.humKg ? t.humW / t.humKg : null,
+        pH:pctNum(t.mh, t.origen), pO:pctNum(Math.max(t.otras, 0), t.origen)};
+    }).sort(function(a, b){ return (b.pH + b.pO) - (a.pH + a.pO); });
+  }
+  function diaPoints(list){
+    var m = group(list.filter(function(r){ return r.fecha; }), function(r){ return dateKey(r.fecha); });
+    return Array.from(m.keys()).sort(function(a, b){ return a - b; }).map(function(k){
+      var rs = m.get(k), t = sums(rs);
+      return {fecha:rs[0].fecha, n:t.n, origen:t.origen, merma:t.mh + Math.max(t.otras, 0), fin:t.fin};
+    });
+  }
+  function twinRows(tb, rows){
+    tb.innerHTML = rows.length ? rows.map(function(r){
+      return "<tr><td>" + esc(r.label) + '</td><td class="num">' + r.n + '</td><td class="num">' + fmtKg(r.origen) +
+        '</td><td class="num">' + (r.humProm != null ? fmtHum(Math.round(r.humProm * 100) / 100) : "–") +
+        '</td><td class="num">' + fmtKg(r.mh) + " · " + fmtPct(r.pH) + '</td><td class="num">' + fmtKg(r.otras) + " · " + fmtPct(r.pO) +
+        '</td><td class="num">' + fmtKg(r.fin) + "</td></tr>";
+    }).join("") : '<tr class="empty"><td colspan="7">Sin datos.</td></tr>';
+  }
+  var chartData = null;
+  function renderCharts(){
+    if (!chartData || $("#view-resumen").hidden || $("#resBody").hidden) return;
+    hbarChart($("#chGrano"), chartData.grano, "grano");
+    hbarChart($("#chFuente"), chartData.fuente, "archivo");
+    colChart($("#chDia"), chartData.dia);
+  }
+
+  function fileItem(f, i){
+    var meta = f.error ? esc(f.error)
+      : f.fin ? f.count + " pendientes de certificar" + (f.emps && f.emps.length ? " (" + esc(f.emps.join(", ")) + ")" : "") +
+        (f.repetidas ? " · " + f.repetidas + " ya estaban en otro listado" : "") + (f.certificadas ? " · " + f.certificadas + " ya certificadas" : "")
+      : (f.fmt ? esc(f.fmt) + " · " : "") + f.count + " cartas" + (f.replaced ? " · " + f.replaced + " actualizadas" : "") +
+        (f.dup ? " · " + f.dup + " también en otro archivo" : "") + (f.noCal ? " · sin hoja Calidad" : "");
+    if (f.needsGrain){
+      meta += '<div class="grain"><label for="grain' + i + '">Grano:</label> <select id="grain' + i + '" data-grain="' + i + '">' +
+        '<option value="">Elegí…</option>' + GRANOS.map(function(g){ return '<option' + (f.grain === g.label ? " selected" : "") + ">" + g.label + "</option>"; }).join("") + "</select></div>";
+    }
+    return '<li class="file' + (f.error ? " err" : "") + '"><div><div class="nm">' + esc(f.name) + '</div><div class="meta">' + meta + "</div></div>" +
+      '<button class="x" type="button" data-rm="' + i + '" aria-label="Quitar ' + esc(f.name) + '"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></li>';
+  }
+  function renderFiles(){
+    $("#sampleNote").hidden = !state.sample;
+    var fin = [], buy = [];
+    if (!state.sample) state.files.forEach(function(f, i){ (f.fin ? fin : buy).push(fileItem(f, i)); });
+    $("#listFin").innerHTML = fin.join("") || '<li class="muted small">Todavía no cargaste el listado de Finnegans.</li>';
+    $("#listBuy").innerHTML = buy.join("") || '<li class="muted small">Todavía no cargaste descargas del comprador.</li>';
+    var nOk = state.sample ? 0 : state.files.filter(function(f){ return !f.error; }).length;
+    $("#bdgCargar").textContent = nOk ? String(nOk) : "";
+  }
+  function pendScope(){
+    var fm = $("#fEmp").value, fc = $("#fCli").value;
+    return state.pend.filter(function(p){ return (!fm || p.emp === fm) && (!fc || p.cliente === fc); });
+  }
+  function rowFinder(){
+    var m = new Map();
+    state.rows.forEach(function(r){ if (r.ctg) m.set("t:" + r.ctg, r); if (r.cp) m.set("c:" + cpDigits(r.cp), r); });
+    return function(p){ return p.ctg ? m.get("t:" + p.ctg) || null : (p.cp ? m.get("c:" + cpDigits(p.cp)) || null : null); };
+  }
+  function renderKpis(t, list){
+    var ni = list.filter(exportable).length, pend = hasPend();
+    var tiles = [
+      ["Listas para el IMPORTCERT", String(ni), pend ? "de " + pendScope().length + " cartas pendientes en Finnegans" : "cartas completas para certificar", "hl"],
+      ["Kg recibidos", big(t.origen), t.n + (t.n === 1 ? " carta de porte" : " cartas de porte"), ""],
+      ["Merma de humedad", big(t.mh), pct(t.mh, t.origen) + " del recibido", ""],
+      ["Otras mermas", big(t.otras), pct(t.otras, t.origen) + " del recibido", ""],
+      ["Kg finales", big(t.fin), pct(t.fin, t.origen) + " del recibido", ""]
+    ];
+    $("#kpis").innerHTML = tiles.map(function(c){
+      return '<div class="kpi ' + c[3] + '"><span class="kpi-label">' + c[0] + '</span><span class="kpi-value">' + c[1] + '</span><span class="kpi-sub">' + c[2] + "</span></div>";
+    }).join("");
+  }
+  function renderEstado(){
+    var card = $("#cardEstado"), pend = hasPend();
+    card.hidden = !pend;
+    if (!pend) return;
+    var find = rowFinder(), a = 0, b = 0, c = 0, scope = pendScope();
+    scope.forEach(function(p){ var r = find(p); if (!r) c++; else if (importable(r)) a++; else b++; });
+    var total = a + b + c;
+    $("#estadoSub").textContent = total + (total === 1 ? " carta pendiente" : " cartas pendientes");
+    var segs = [
+      {n:a, color:"var(--st-good)", label:"Listas para el IMPORTCERT", go:"cartas", estado:"si", warn:"ok"},
+      {n:b, color:"var(--st-warn)", label:"Con aviso: no entran todavía", go:"cartas", estado:"si", warn:"block"},
+      {n:c, color:"var(--st-none)", label:"Sin descarga del comprador", go:"pendientes", estado:"", warn:""}
+    ];
+    var bar = $("#estadoBar");
+    bar.replaceChildren();
+    bar.setAttribute("aria-label", segs.map(function(sg){ return sg.label + ": " + sg.n; }).join(", "));
+    segs.forEach(function(sg){
+      if (!sg.n) return;
+      var e = document.createElement("span");
+      e.style.flex = sg.n + " 1 0"; e.style.background = sg.color; e.title = sg.label + ": " + sg.n;
+      bar.appendChild(e);
+    });
+    if (!total){ var z = document.createElement("span"); z.style.flex = "1 1 0"; z.style.background = "var(--grid)"; bar.appendChild(z); }
+    $("#estadoGrid").innerHTML = segs.map(function(sg){
+      return '<button type="button" class="status-item" data-go="' + sg.go + '" data-estado="' + sg.estado + '" data-warn="' + sg.warn + '">' +
+        '<span class="l"><i class="sw" style="background:' + sg.color + '"></i>' + sg.label + '</span>' +
+        '<span class="n">' + sg.n + '</span><span class="p">' + (total ? fmtPct(sg.n / total * 100, 0) : "–") + " de los pendientes</span></button>";
+    }).join("");
+  }
+  var BLOQUEAN = ["cod", "grain", "fin", "tab", "neg", "ctg", "fecha", "cp"];
+  function flagLabel(f){
+    if (f === "mhd") return "Merma de humedad del comprador distinta a la tabla";
+    if (f === "dif") return "Otro archivo informa otros kg finales";
+    return FLAG[f] ? FLAG[f].txt : f;
+  }
+  function flagCounts(list){
+    var c = {};
+    list.forEach(function(r){ r.flags.forEach(function(f){ c[f] = (c[f] || 0) + 1; }); });
+    return c;
+  }
+  function renderAvisos(list){
+    var c = flagCounts(list), keys = Object.keys(c).sort(function(a, b){ return c[b] - c[a]; });
+    var cartas = list.filter(function(r){ return r.flags.length; }).length;
+    $("#avisosSub").textContent = cartas ? cartas + (cartas === 1 ? " carta con aviso" : " cartas con aviso") : "";
+    $("#avisos").innerHTML = keys.length ? keys.map(function(f){
+      var bloquea = BLOQUEAN.indexOf(f) >= 0;
+      return '<li><button type="button" data-warn="' + f + '"><span><span class="pill ' + (bloquea ? "bad" : "warn") + '">' + (bloquea ? "No entra" : "Revisar") + "</span> " +
+        esc(flagLabel(f)) + '</span><span><span class="cnt">' + c[f] + '</span> <span class="go">Ver</span></span></button></li>';
+    }).join("") : '<li class="muted">Todo en orden: ninguna carta tiene avisos.</li>';
+  }
+  function renderWarnSelect(){
+    var sel = $("#fWarn"), cur = sel.value, c = flagCounts(state.rows);
+    var opts = [["", "Todas las cartas"], ["ok", "Entran al IMPORTCERT"], ["block", "No entran al IMPORTCERT"], ["any", "Con algún aviso"]];
+    Object.keys(c).forEach(function(f){ opts.push([f, flagLabel(f) + " (" + c[f] + ")"]); });
+    sel.innerHTML = opts.map(function(o){ return '<option value="' + esc(o[0]) + '">' + esc(o[1]) + "</option>"; }).join("");
+    sel.value = opts.some(function(o){ return o[0] === cur; }) ? cur : "";
+  }
+  function cols(){
+    var c = COLS.slice();
+    if (hasPend()) c.splice(c.length - 1, 0, {key:"estado", label:"Finnegans"});
+    return c;
+  }
+  function estadoCell(r){
+    var mt = matchOf(r);
+    var info = [mt && mt.cliente, mt && mt.emp].filter(Boolean).join(" · ");
+    return mt ? '<span class="pill ok"' + (info ? ' title="' + esc(info) + '"' : "") + ">A certificar</span>"
+              : '<span class="pill mute">No pendiente</span>';
+  }
+  function renderHead(){
+    $("#tblHead").innerHTML = cols().map(function(c){
+      var sort = state.sort.key === c.key ? (state.sort.dir > 0 ? "ascending" : "descending") : null;
+      return "<th" + (c.num ? ' class="num"' : "") + (sort ? ' aria-sort="' + sort + '"' : "") + '><button type="button" data-sort="' + c.key + '">' + c.label + "</button></th>";
+    }).join("");
+  }
+  function renderTable(list, t){
+    var pend = hasPend();
+    $("#rowCount").textContent = list.length + " de " + state.rows.length;
+    if (!list.length){
+      $("#tblBody").innerHTML = '<tr class="empty"><td colspan="' + cols().length + '">' +
+        (state.rows.length ? "Ninguna carta de porte coincide con el filtro." : "Cargá las descargas de un comprador para empezar.") + "</td></tr>";
+      $("#tblFoot").innerHTML = "";
+      return;
+    }
+    $("#tblBody").innerHTML = list.map(function(r){
+      var sev = r.flags.some(function(f){ return BLOQUEAN.indexOf(f) >= 0; }) ? "bad" : (r.flags.length ? "warn" : "");
+      var pills = r.flags.map(function(f){
+        if (f === "mhd") return '<span class="pill warn" title="La tabla da ' + fmtKg(r.mh) + ' kg; la diferencia va a MERMAOTROS">Comprador: ' + fmtKg(r.mhDif) + " kg de humedad</span>";
+        if (f === "dif") return '<span class="pill warn" title="' + esc(r.otro.file) + '">' + esc(r.otro.file.replace(/\.xlsx?$/i, "")) + " informa " + fmtKg(r.otro.fin) + " kg finales</span>";
+        return '<span class="pill ' + (BLOQUEAN.indexOf(f) >= 0 ? "bad" : "warn") + '">' + FLAG[f].txt + "</span>";
+      }).join("");
+      return '<tr class="' + sev + '"><td>' + fmtDate(r.fecha) + '</td><td class="code">' + esc(r.cp) + '</td><td class="code">' + esc(r.ctg) +
+        "</td><td>" + esc(r.prod) + (grano(r.prod) ? ' <span class="muted code">' + grano(r.prod).cod + "</span>" : "") + '</td><td class="num">' + fmtKg(r.origen) + '</td><td class="num">' + fmtHum(r.hum) +
+        '</td><td class="num">' + fmtKg(r.mh) +
+        '</td><td class="num">' + fmtKg(r.fin) +
+        '</td><td class="num' + (r.otras < 0 ? " neg" : "") + '">' + fmtKg(r.otras) +
+        (pend ? "</td><td>" + estadoCell(r) : "") + '</td><td><div class="pills">' + pills + "</div></td></tr>";
+    }).join("");
+    $("#tblFoot").innerHTML = '<tr><td colspan="4">Total · ' + t.n + ' cartas</td><td class="num">' + fmtKg(t.origen) +
+      '</td><td class="num"></td><td class="num">' + fmtKg(t.mh) + '</td><td class="num">' + fmtKg(t.fin) +
+      '</td><td class="num">' + fmtKg(t.otras) + "</td>" + (pend ? "<td></td>" : "") + "<td></td></tr>";
+  }
+  // Pendientes de Finnegans que todavía no aparecen en ninguna descarga cargada
+  function renderPend(){
+    var pend = hasPend();
+    $("#pendPanel").hidden = !pend;
+    $("#pendEmpty").hidden = pend;
+    if (!pend){ $("#bdgPend").textContent = ""; return; }
+    var find = rowFinder();
+    var list = pendScope().filter(function(p){ return !find(p); })
+      .sort(function(a, b){ return a.cliente.localeCompare(b.cliente, "es") || dateKey(a.fecha) - dateKey(b.fecha) || a.cp.localeCompare(b.cp); });
+    $("#bdgPend").textContent = String(list.length);
+    $("#pendCount").textContent = list.length + " de " + pendScope().length + " pendientes";
+    // Columnas según lo que trae el Excel de Finnegans (el listado simple solo tiene CP y CTG)
+    var pc = [
+      {l:"Fecha", has:function(p){ return p.fecha; }, v:function(p){ return fmtDate(p.fecha); }},
+      {l:"Comprador", has:function(p){ return p.cliente; }, v:function(p){ return esc(p.cliente); }},
+      {l:"Empresa", has:function(p){ return p.emp; }, v:function(p){ return esc(p.emp); }},
+      {l:"Carta de Porte", all:true, cls:"code", v:function(p){ return esc(p.cp); }},
+      {l:"CTG", all:true, cls:"code", v:function(p){ return esc(p.ctg); }},
+      {l:"Producto", has:function(p){ return p.prod; }, v:function(p){ return esc(p.prod); }},
+      {l:"Kg Origen CP", has:function(p){ return p.origen != null; }, cls:"num", v:function(p){ return fmtKg(p.origen); }}
+    ].filter(function(c){ return c.all || state.pend.some(c.has); });
+    $("#pendHead").innerHTML = pc.map(function(c){ return "<th" + (c.cls === "num" ? ' class="num"' : "") + ">" + c.l + "</th>"; }).join("");
+    var byCli = new Map();
+    list.forEach(function(p){ if (p.cliente) byCli.set(p.cliente, (byCli.get(p.cliente) || 0) + 1); });
+    $("#pendSum").innerHTML = !list.length
+      ? '<span class="pill ok">Todas las cartas pendientes tienen su descarga cargada</span>'
+      : byCli.size
+        ? Array.from(byCli.entries()).sort(function(a, b){ return b[1] - a[1]; }).map(function(e){ return '<span class="pill mute">' + esc(e[0]) + " · " + e[1] + "</span>"; }).join("")
+        : '<span class="small muted">Estas cartas están pendientes en Finnegans y no aparecen en las descargas cargadas.</span>';
+    $("#pendBody").innerHTML = list.length ? list.map(function(p){
+      return "<tr>" + pc.map(function(c){ return "<td" + (c.cls ? ' class="' + c.cls + '"' : "") + ">" + c.v(p) + "</td>"; }).join("") + "</tr>";
+    }).join("") : '<tr class="empty"><td colspan="' + pc.length + '">Nada pendiente sin descarga.</td></tr>';
+  }
+  function exportable(r){ return importable(r) && (!hasPend() || !!matchOf(r)); }
+  function updateExport(n){
+    var btn = $("#btnExport"), hint = $("#exportHint");
+    var ni = lastList.filter(exportable).length;
+    $("#btnExportLabel").textContent = n ? "Excel de control (" + n + ")" : "Excel de control";
+    $("#btnImportLabel").textContent = ni ? "IMPORTCERT para Finnegans (" + ni + ")" : "IMPORTCERT para Finnegans";
+    btn.disabled = !downloads || !n;
+    $("#btnImport").disabled = !downloads || !ni;
+    if (downloadsResolved && !downloads){
+      hint.hidden = false;
+      hint.textContent = "La descarga no está disponible en esta vista.";
+    } else hint.hidden = true;
+  }
+  var lastList = [];
+  function render(){
+    fileInfo = new Map(state.files.map(function(f){ return [f.name, f]; }));
+    fillSelect($("#fProd"), Array.from(new Set(state.rows.map(granoDe))).sort(), "Todos los granos");
+    fillSelect($("#fFile"), Array.from(new Set(state.rows.map(function(r){ return r.file; }))).sort(), "Todos los archivos");
+    computeMatches();
+    var pend = hasPend();
+    var emps = Array.from(new Set(state.pend.map(function(p){ return p.emp; }).filter(Boolean))).sort();
+    var clis = Array.from(new Set(state.pend.map(function(p){ return p.cliente; }).filter(Boolean))).sort();
+    fillSelect($("#fEmp"), emps, "Todas las empresas");
+    fillSelect($("#fCli"), clis, "Todos los compradores");
+    $("#fEstado").hidden = !pend;
+    $("#fEmp").hidden = !pend || !emps.length;
+    $("#fCli").hidden = !pend || !clis.length;
+    $("#btnReset").hidden = !["#fEstado", "#fEmp", "#fCli", "#fProd", "#fFile"].some(function(s){ return $(s).value; });
+    renderWarnSelect();
+
+    var base = filtered(true), t = sums(base);
+    lastList = base;
+    var tableList = filtered(false);
+    var vacio = !state.sample && !state.rows.length && !state.pend.length;
+    $("#resEmpty").hidden = !vacio;
+    $("#resBody").hidden = vacio;
+    $("#bdgCartas").textContent = state.rows.length ? String(base.length) : "";
+
+    renderFiles(); renderKpis(t, base); renderEstado(); renderAvisos(base);
+    chartData = {grano:mermaRows(group(base, granoDe)), fuente:mermaRows(group(base, fuenteDe)), dia:diaPoints(base)};
+    twinRows($("#tbGrano"), chartData.grano);
+    twinRows($("#tbFuente"), chartData.fuente);
+    var d = chartData.dia;
+    $("#diaSub").textContent = d.length ? (d.length === 1 ? fmtDate(d[0].fecha) : "Del " + fmtDate(d[0].fecha) + " al " + fmtDate(d[d.length - 1].fecha)) : "";
+    $("#tbDia").innerHTML = d.length ? d.map(function(p){
+      return "<tr><td>" + fmtDate(p.fecha) + '</td><td class="num">' + p.n + '</td><td class="num">' + fmtKg(p.origen) +
+        '</td><td class="num">' + fmtPct(pctNum(p.merma, p.origen)) + '</td><td class="num">' + fmtKg(p.fin) + "</td></tr>";
+    }).join("") : '<tr class="empty"><td colspan="5">Sin datos.</td></tr>';
+    renderHead(); renderTable(tableList, sums(tableList)); renderPend(); updateExport(base.length);
+    renderCharts();
+  }
+
+  /* ---------- carga de archivos ---------- */
+  var toastTimer;
+  function toast(msg, ms){
+    var el = $("#toast");
+    el.textContent = msg; el.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ el.classList.remove("show"); }, ms || 3200);
+  }
+  // mode: "fin" = cuadro 1 (Finnegans), "buy" = cuadro 2 (comprador), "auto" = soltado fuera de los cuadros
+  function handleFiles(fileList, mode){
+    var files = Array.prototype.filter.call(fileList, function(f){ return /\.(xlsx|xls)$/i.test(f.name); });
+    if (!files.length){ toast("Elegí archivos .xlsx o .xls"); return; }
+    if (typeof XLSX === "undefined"){ toast("No se pudo cargar el lector de Excel. Recargá la página."); return; }
+    var total = 0, pend = 0, errs = 0, moved = 0, fresh = true;
+    function asFin(aoa, h, name){
+      var fr = processFinnegans(aoa, h, name);
+      addPend(fr, name, fresh); fresh = false;
+      pend += fr.rows.length;
+    }
+    Promise.all(files.map(function(f){
+      return f.arrayBuffer().then(function(buf){
+        var wb = XLSX.read(new Uint8Array(buf), {type:"array"});
+        var sheets = wb.SheetNames.map(function(sn){
+          return XLSX.utils.sheet_to_json(wb.Sheets[sn], {header:1, raw:true, defval:null, blankrows:false});
+        });
+        var i, h;
+        // El reporte completo de Finnegans siempre va al cuadro 1
+        for (i = 0; i < sheets.length; i++){
+          h = detectFin(sheets[i]);
+          if (h){ if (mode === "buy") moved++; asFin(sheets[i], h, f.name); return; }
+        }
+        var res = null, err = null;
+        try { res = processBuyer(wb, f.name); if (!res.rows.length) res = null; } catch(e){ err = e; }
+        if (mode === "fin" && !(res && res.buyerLike)){
+          for (i = 0; i < sheets.length; i++){
+            h = detectFinList(sheets[i]);
+            if (h){ asFin(sheets[i], h, f.name); return; }
+          }
+        }
+        if (res){
+          if (mode === "fin") moved++;
+          addRows(res.rows, f.name, res);
+          total += res.rows.length;
+          return;
+        }
+        // Un listado de solo CP/CTG (pocas columnas) soltado en el cuadro 2 es de Finnegans
+        for (i = 0; i < sheets.length; i++){
+          h = detectFinList(sheets[i]);
+          if (h && h.cols <= 4){ moved++; asFin(sheets[i], h, f.name); return; }
+        }
+        throw err || new Error("no encontré columnas de Carta de Porte o CTG");
+      }).catch(function(e){
+        errs++;
+        clearSample();
+        state.files = state.files.filter(function(x){ return x.name !== f.name; });
+        state.files.push({name:f.name, fin:mode === "fin", error:"No se pudo leer: " + (e && e.message ? e.message : "formato desconocido")});
+      });
+    })).then(function(){
+      persist(); render();
+      var parts = [];
+      if (pend) parts.push(pend + " pendientes de Finnegans");
+      if (total) parts.push(total + " cartas del comprador");
+      if (moved) parts.push(moved + " archivo(s) pasado(s) al otro cuadro");
+      if (errs) parts.push(errs + " archivo(s) con error");
+      toast(parts.length ? parts.join(" · ") : "No se pudo leer ningún archivo", errs || moved ? 5000 : 3200);
+    });
+  }
+
+  /* ---------- exportar ---------- */
+  function buildXlsx(list){
+    var head = ["Fecha Descarga","Carta de Porte","CTG","Producto","Kg Origen","% Humedad","Kg Merma Humedad","Kg Finales","Kg Otras Mermas"];
+    var aoa = [head];
+    list.forEach(function(r){
+      aoa.push([r.fecha ? dateSerial(r.fecha) : null, r.cp, r.ctg ? Number(r.ctg) : null, r.prod, r.origen,
+        r.hum == null ? null : fmtHum(r.hum), r.mh, r.fin, r.otras]);
+    });
+    var t = sums(list);
+    aoa.push([]);
+    aoa.push(["TOTAL", null, null, t.n + " cartas", t.origen, null, t.mh, t.fin, t.otras]);
+    var ws = XLSX.utils.aoa_to_sheet(aoa);
+    for (var R = 1; R < aoa.length; R++){
+      [0, 2, 4, 6, 7, 8].forEach(function(C){
+        var cell = ws[XLSX.utils.encode_cell({r:R, c:C})];
+        if (cell && cell.t === "n") cell.z = C === 0 ? "d/m/yy" : "0";
+      });
+    }
+    ws["!cols"] = [{wch:14},{wch:17},{wch:14},{wch:16},{wch:11},{wch:11},{wch:18},{wch:11},{wch:16}];
+    var wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Datos");
+    return XLSX.write(wb, {bookType:"xlsx", type:"array"});
+  }
+  // Una carta entra al IMPORTCERT solo si tiene todo lo que Finnegans necesita
+  function importable(r){
+    return r.fin != null && r.mh != null && r.otras >= 0 &&
+      !!grano(r.prod) && !!r.fecha && !!r.cp && !!r.ctg;
+  }
+  function buildImportcert(list){
+    var head = ["CERTIFICADO","CARTAPORTE","CTG","FECHA","PRODUCTO","CANTIDADRECIBIDA","FACTOR","GRADO","HUMEDAD",
+      "MERMAOTROS","PORCMERMAVOLATIL","DIMENSION","DIMENSIONVALOR","COE","TIPOCOMPROBANTEIMPOSITIVO","ACTIVIDAD"];
+    var aoa = [head];
+    list.forEach(function(r, i){
+      var g = grano(r.prod), mt = matchOf(r);
+      aoa.push([i + 1, mt && mt.cp ? mt.cp : r.cp, Number(r.ctg), dateSerial(r.fecha), g.cod, r.origen, 1, 1,
+        r.mh > 0 && r.hum != null ? r.hum : null, r.otras, null, "DIMCTC", g.dim, null, null, null]);
+    });
+    var ws = XLSX.utils.aoa_to_sheet(aoa);
+    var fmts = {0:"0", 3:"d/m/yy;@", 6:"#,##0", 9:"0"};
+    for (var R = 1; R < aoa.length; R++){
+      for (var C in fmts){
+        var cell = ws[XLSX.utils.encode_cell({r:R, c:+C})];
+        if (cell && cell.t === "n") cell.z = fmts[C];
+      }
+    }
+    ws["!cols"] = [13.1,15.3,16.2,11.3,13.2,16.1,7.1,6.7,9.3,12.6,22,12.3,21.3,6.2,38.6,12.9].map(function(w){ return {wch:w}; });
+    var wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "IMPORTCERT");
+    return XLSX.write(wb, {bookType:"xlsx", type:"array"});
+  }
+  function stamp(sep){
+    var d = new Date(), p = function(n){ return String(n).padStart(2, "0"); };
+    return p(d.getDate()) + sep + p(d.getMonth()+1) + sep + d.getFullYear();
+  }
+  function exportImportcert(){
+    if (!downloads) return;
+    var list = lastList.filter(exportable), left = lastList.length - list.length;
+    if (!list.length) return;
+    var buf;
+    try { buf = buildImportcert(list); } catch(e){ toast("No se pudo armar el IMPORTCERT."); return; }
+    saveFile("IMPORTCERT " + stamp("-") + ".xlsx", buf,
+      "IMPORTCERT listo · " + list.length + " cartas" + (left ? " · " + left + " quedaron afuera (" + (hasPend() ? "no pendientes o con aviso" : "con aviso") + ")" : ""));
+  }
+  function exportXlsx(){
+    if (!downloads || !lastList.length) return;
+    var buf;
+    try { buf = buildXlsx(lastList); } catch(e){ toast("No se pudo armar el Excel."); return; }
+    saveFile("Control mermas " + stamp(" ") + ".xlsx", buf, "Excel descargado");
+  }
+  function saveFile(name, buf, okMsg){
+    downloads.save({filename:name, data:new Blob([buf])}).then(function(res){
+      toast(res && res.status === "delivered" ? "Archivo enviado" : okMsg, 4500);
+    }).catch(function(e){
+      var code = e && e.code;
+      if (code === "declined") toast("Descarga cancelada");
+      else if (code === "rate_limited") toast("Ya hay una descarga pendiente de confirmar");
+      else { toast("La descarga no está disponible en esta vista"); downloads = null; updateExport(lastList.length); }
+    });
+  }
+
+  /* ---------- pestañas ---------- */
+  var TABS = ["resumen", "cargar", "cartas", "pendientes"], tab = "resumen";
+  function showTab(name, focus){
+    if (TABS.indexOf(name) < 0) name = "resumen";
+    tab = name;
+    TABS.forEach(function(t){
+      var b = $("#tab-" + t), on = t === name;
+      b.setAttribute("aria-selected", on ? "true" : "false");
+      b.tabIndex = on ? 0 : -1;
+      $("#view-" + t).hidden = !on;
+    });
+    $("#filterbar").hidden = name === "cargar";
+    tipHide();
+    try { localStorage.setItem(LS + ".tab", name); } catch(e){}
+    try { if (location.hash.slice(1) !== name) history.replaceState(null, "", "#" + name); } catch(e){}
+    if (focus) $("#tab-" + name).focus();
+    if (name === "resumen") renderCharts();
+  }
+  $(".tabs").addEventListener("click", function(e){
+    var b = e.target.closest("[data-tab]"); if (b) showTab(b.getAttribute("data-tab"));
+  });
+  $(".tabs").addEventListener("keydown", function(e){
+    var i = TABS.indexOf(tab), n = null;
+    if (e.key === "ArrowRight") n = TABS[(i + 1) % TABS.length];
+    else if (e.key === "ArrowLeft") n = TABS[(i + TABS.length - 1) % TABS.length];
+    else if (e.key === "Home") n = TABS[0];
+    else if (e.key === "End") n = TABS[TABS.length - 1];
+    if (n){ e.preventDefault(); showTab(n, true); }
+  });
+  // Botones que llevan a otra pestaña (y a veces aplican un filtro)
+  document.addEventListener("click", function(e){
+    var b = e.target.closest("[data-go]"); if (!b) return;
+    var go = b.getAttribute("data-go");
+    if (go === "cartas" && b.hasAttribute("data-estado")){
+      $("#fEstado").value = b.getAttribute("data-estado") || "";
+      $("#fWarn").value = b.getAttribute("data-warn") || "";
+      render();
+    }
+    showTab(go);
+    window.scrollTo(0, 0);
+  });
+  $("#avisos").addEventListener("click", function(e){
+    var b = e.target.closest("[data-warn]"); if (!b) return;
+    $("#fWarn").value = b.getAttribute("data-warn");
+    render(); showTab("cartas"); window.scrollTo(0, 0);
+  });
+  $("#btnReset").addEventListener("click", function(){
+    ["#fEstado", "#fEmp", "#fCli", "#fProd", "#fFile"].forEach(function(s){ $(s).value = ""; });
+    render();
+  });
+
+  /* ---------- carga, filtros y botones ---------- */
+  $("#fileFin").addEventListener("change", function(e){ handleFiles(e.target.files, "fin"); e.target.value = ""; });
+  $("#fileBuy").addEventListener("change", function(e){ handleFiles(e.target.files, "buy"); e.target.value = ""; });
+  var drops = Array.prototype.slice.call(document.querySelectorAll(".drop"));
+  drops.forEach(function(d){
+    d.addEventListener("dragover", function(e){ e.preventDefault(); drops.forEach(function(x){ x.classList.toggle("over", x === d); }); });
+    d.addEventListener("dragleave", function(){ d.classList.remove("over"); });
+    d.addEventListener("drop", function(e){
+      e.preventDefault(); e.stopPropagation();
+      drops.forEach(function(x){ x.classList.remove("over"); });
+      if (e.dataTransfer && e.dataTransfer.files.length) handleFiles(e.dataTransfer.files, d.getAttribute("data-mode"));
+    });
+  });
+  // Grano elegido a mano para archivos que no lo traen (ACA)
+  $(".load").addEventListener("change", function(e){
+    var s = e.target.closest("[data-grain]"); if (!s) return;
+    var f = state.files[+s.getAttribute("data-grain")]; if (!f) return;
+    f.grain = s.value;
+    state.rows.forEach(function(r){ if (r.file === f.name && r.noProd){ r.prod = s.value; derive(r); } });
+    persist(); render();
+  });
+  // Soltado fuera de los cuadros: se reconoce solo
+  window.addEventListener("dragover", function(e){ e.preventDefault(); });
+  window.addEventListener("drop", function(e){
+    e.preventDefault();
+    drops.forEach(function(x){ x.classList.remove("over"); });
+    if (e.dataTransfer && e.dataTransfer.files.length){ handleFiles(e.dataTransfer.files, "auto"); showTab("cargar"); }
+  });
+  $(".load").addEventListener("click", function(e){
+    var b = e.target.closest("[data-rm]"); if (!b) return;
+    var f = state.files[+b.getAttribute("data-rm")]; if (!f) return;
+    state.rows = state.rows.filter(function(r){ return r.file !== f.name; });
+    state.pend = state.pend.filter(function(p){ return p.file !== f.name; });
+    state.files.splice(+b.getAttribute("data-rm"), 1);
+    persist(); render(); toast("Quitado: " + f.name);
+  });
+  ["#fEstado", "#fEmp", "#fCli", "#fProd", "#fFile", "#fWarn"].forEach(function(s){ $(s).addEventListener("change", render); });
+  $("#fQ").addEventListener("input", render);
+  $("#tblHead").addEventListener("click", function(e){
+    var b = e.target.closest("[data-sort]"); if (!b) return;
+    var key = b.getAttribute("data-sort");
+    state.sort = state.sort.key === key ? {key:key, dir:-state.sort.dir} : {key:key, dir:1};
+    render();
+  });
+  $("#btnExport").addEventListener("click", exportXlsx);
+  $("#btnImport").addEventListener("click", exportImportcert);
+  var armTimer;
+  $("#btnClear").addEventListener("click", function(){
+    var b = this;
+    if (!b.classList.contains("armed")){
+      b.classList.add("armed"); b.textContent = "Confirmar: vaciar todo";
+      clearTimeout(armTimer);
+      armTimer = setTimeout(function(){ b.classList.remove("armed"); b.textContent = "Vaciar todo"; }, 4000);
+      return;
+    }
+    clearTimeout(armTimer);
+    b.classList.remove("armed"); b.textContent = "Vaciar todo";
+    state.rows = []; state.files = []; state.pend = []; state.sample = false;
+    try { localStorage.removeItem(LS); } catch(e){}
+    render(); toast("Se vaciaron todos los datos");
+  });
+
+  // Los gráficos se redibujan al cambiar el ancho
+  var rzFrame = 0, lastW = 0;
+  function onResize(){
+    var w = $("#view-resumen").clientWidth;
+    if (!w || w === lastW) return;
+    lastW = w;
+    cancelAnimationFrame(rzFrame);
+    rzFrame = requestAnimationFrame(renderCharts);
+  }
+  if (window.ResizeObserver) new ResizeObserver(onResize).observe($("#view-resumen"));
+  else window.addEventListener("resize", onResize);
+
+  load();
+  var inicial = location.hash.slice(1);
+  if (TABS.indexOf(inicial) < 0){ try { inicial = localStorage.getItem(LS + ".tab") || ""; } catch(e){ inicial = ""; } }
+  render();
+  showTab(TABS.indexOf(inicial) >= 0 ? inicial : "resumen");
+
+  // Abierto como archivo en el navegador (fuera de Claude): descarga común del navegador
+  function descargaLocal(o){
+    var blob = new Blob([o.data], {type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+    var url = URL.createObjectURL(blob), a = document.createElement("a");
+    a.href = url; a.download = o.filename;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 5000);
+    return Promise.resolve({status:"saved"});
+  }
+  try {
+    if (window.claude && window.claude.use){
+      Promise.resolve(window.claude.use("downloads")).then(function(ns){ downloads = ns || null; }, function(){ downloads = null; })
+        .then(function(){ downloadsResolved = true; updateExport(lastList.length); });
+    } else {
+      downloads = {save:descargaLocal};
+      downloadsResolved = true; updateExport(lastList.length);
+    }
+  } catch(e){ downloadsResolved = true; updateExport(lastList.length); }
+})();
+</script>
+</body>
+</html>
