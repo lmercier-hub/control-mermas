@@ -291,12 +291,6 @@
 </nav>
 
 <main class="wrap">
-  <div class="notice" id="sampleNote" hidden>
-    <span class="tag">Ejemplo</span>
-    <span>Estás viendo datos de ejemplo. Se reemplazan cuando cargás tu primer archivo.</span>
-    <button class="linkbtn" type="button" data-go="cargar">Cargar archivos</button>
-  </div>
-
   <div class="filterbar" id="filterbar">
     <span class="lbl">Filtrar</span>
     <select id="fEstado" aria-label="Estado en Finnegans" hidden>
@@ -598,16 +592,8 @@
     cebadacervecera:[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.88,1.0,1.11,1.22,1.339,1.453,1.56,1.677,1.79,1.903,2.017,2.13,2.25,2.357,2.47,2.59,2.7,2.813,2.927,3.04,3.153,3.267,3.38,3.5,3.613,3.72,3.844,3.95,4.06,4.175,4.288,4.4,4.52,4.625,4.75,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2]
   };
 
-  var SAMPLE = [
-    {fecha:{y:2026,m:9,d:22}, cp:"00001-00012841", ctg:"10135271104", prod:"SOJA POROTO", origen:30120, hum:13.5, mhAc:0,   finAc:30120},
-    {fecha:{y:2026,m:9,d:22}, cp:"00001-00012842", ctg:"10135271388", prod:"SOJA POROTO", origen:29860, hum:14.3, mhAc:520, finAc:29280},
-    {fecha:{y:2026,m:9,d:23}, cp:"00001-00012845", ctg:"10135272010", prod:"MAIZ DURO",   origen:31540, hum:15.8, mhAc:918, finAc:30543},
-    {fecha:{y:2026,m:9,d:23}, cp:"00001-00012846", ctg:"10135272233", prod:"MAIZ DURO",   origen:30980, hum:16.4, mhAc:1115, finAc:29835},
-    {fecha:{y:2026,m:9,d:24}, cp:"00001-00012850", ctg:"10135273417", prod:"SOJA POROTO", origen:28740, hum:12.9, mhAc:0,   finAc:28740},
-    {fecha:{y:2026,m:9,d:24}, cp:"00001-00012851", ctg:"10135273598", prod:"MAIZ DURO",   origen:32110, hum:null, mhAc:null, finAc:32110}
-  ];
 
-  var state = { rows:[], files:[], pend:[], sample:false, sort:{key:"fecha", dir:1} };
+  var state = { rows:[], files:[], pend:[], sort:{key:"fecha", dir:1} };
   var matchMap = new Map(); // rowKey -> pendiente de Finnegans
   var downloads = null, downloadsResolved = false;
 
@@ -1043,20 +1029,13 @@
         return;
       }
     } catch(e){}
-    state.rows = SAMPLE.map(function(r){ return derive(Object.assign({file:"Ejemplo"}, r)); });
-    state.files = [];
-    state.sample = true;
+    state.rows = []; state.files = []; state.pend = [];
   }
   function persist(){
-    if (state.sample) return;
     try { localStorage.setItem(LS, JSON.stringify({rows:state.rows, pend:state.pend, files:state.files})); } catch(e){}
-  }
-  function clearSample(){
-    if (state.sample){ state.rows = []; state.files = []; state.pend = []; state.sample = false; }
   }
   // El primer listado de Finnegans de cada carga reemplaza a los anteriores; los demás de la misma carga se suman
   function addPend(res, fileName, fresh){
-    clearSample();
     if (fresh){
       state.pend = [];
       state.files = state.files.filter(function(f){ return !f.fin; });
@@ -1074,7 +1053,6 @@
     state.files.push({name:fileName, fin:true, count:res.rows.length, repetidas:repetidas, certificadas:res.certificadas, emps:Array.from(res.emps).sort()});
   }
   function addRows(rows, fileName, info){
-    clearSample();
     var idx = new Map(state.rows.map(function(r, i){ return [rowKey(r), i]; }));
     var added = 0, replaced = 0, dup = 0;
     rows.forEach(function(r){
@@ -1365,12 +1343,11 @@
       '<button class="x" type="button" data-rm="' + i + '" aria-label="Quitar ' + esc(f.name) + '"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></li>';
   }
   function renderFiles(){
-    $("#sampleNote").hidden = !state.sample || tab === "facturas";
     var fin = [], buy = [];
-    if (!state.sample) state.files.forEach(function(f, i){ (f.fin ? fin : buy).push(fileItem(f, i)); });
+    state.files.forEach(function(f, i){ (f.fin ? fin : buy).push(fileItem(f, i)); });
     $("#listFin").innerHTML = fin.join("") || '<li class="muted small">Todavía no cargaste el listado de Finnegans.</li>';
     $("#listBuy").innerHTML = buy.join("") || '<li class="muted small">Todavía no cargaste descargas del comprador.</li>';
-    var nOk = state.sample ? 0 : state.files.filter(function(f){ return !f.error; }).length;
+    var nOk = state.files.filter(function(f){ return !f.error; }).length;
     $("#bdgCargar").textContent = nOk ? String(nOk) : "";
   }
   function pendScope(){
@@ -1563,7 +1540,7 @@
     var base = filtered(true), t = sums(base);
     lastList = base;
     var tableList = filtered(false);
-    var vacio = !state.sample && !state.rows.length && !state.pend.length;
+    var vacio = !state.rows.length && !state.pend.length;
     $("#resEmpty").hidden = !vacio;
     $("#resBody").hidden = vacio;
     $("#bdgCartas").textContent = state.rows.length ? String(base.length) : "";
@@ -1635,7 +1612,6 @@
         throw err || new Error("no encontré columnas de Carta de Porte o CTG");
       }).catch(function(e){
         errs++;
-        clearSample();
         state.files = state.files.filter(function(x){ return x.name !== f.name; });
         state.files.push({name:f.name, fin:mode === "fin", error:"No se pudo leer: " + (e && e.message ? e.message : "formato desconocido")});
       });
@@ -1980,7 +1956,6 @@
       $("#view-" + t).hidden = !on;
     });
     $("#filterbar").hidden = name === "cargar" || name === "facturas";
-    $("#sampleNote").hidden = !state.sample || name === "facturas";
     tipHide();
     try { localStorage.setItem(LS + ".tab", name); } catch(e){}
     try { if (location.hash.slice(1) !== name) history.replaceState(null, "", "#" + name); } catch(e){}
@@ -2081,7 +2056,7 @@
     }
     clearTimeout(armTimer);
     b.classList.remove("armed"); b.textContent = "Vaciar todo";
-    state.rows = []; state.files = []; state.pend = []; state.sample = false;
+    state.rows = []; state.files = []; state.pend = [];
     try { localStorage.removeItem(LS); } catch(e){}
     render(); toast("Se vaciaron todos los datos");
   });
@@ -2104,7 +2079,9 @@
   if (TABS.indexOf(inicial) < 0){ try { inicial = localStorage.getItem(LS + ".tab") || ""; } catch(e){ inicial = ""; } }
   render();
   factRender();
-  showTab(TABS.indexOf(inicial) >= 0 ? inicial : "resumen");
+  // Sin nada cargado todavía, se arranca por la carga de archivos
+  var sinDatos = !state.rows.length && !state.pend.length && !fact.files.length;
+  showTab(TABS.indexOf(inicial) >= 0 ? inicial : (sinDatos ? "cargar" : "resumen"));
 
   // Abierto como archivo en el navegador (fuera de Claude): descarga común del navegador
   function descargaLocal(o){
