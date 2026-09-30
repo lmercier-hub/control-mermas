@@ -135,7 +135,11 @@
   .status-bar span:last-child{border-radius:0 6px 6px 0}
   .status-bar span:only-child{border-radius:6px}
   .status-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:14px}
+  .status-grid.g4{grid-template-columns:repeat(4,minmax(0,1fr))}
+  @media (max-width:900px){.status-grid.g4{grid-template-columns:repeat(2,minmax(0,1fr))}}
   @media (max-width:700px){.status-grid{grid-template-columns:1fr}}
+  @media (max-width:520px){.status-grid.g4{grid-template-columns:1fr}}
+  .pos{color:var(--bad);font-weight:600}
   .status-item{all:unset;box-sizing:border-box;cursor:pointer;display:grid;gap:2px;padding:10px 12px;border-radius:10px;background:var(--surface-2);box-shadow:inset 0 0 0 1px var(--line)}
   .status-item:hover{box-shadow:inset 0 0 0 1px var(--line-strong)}
   .status-item:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
@@ -278,6 +282,10 @@
     <button class="tab" role="tab" id="tab-pendientes" aria-controls="view-pendientes" aria-selected="false" data-tab="pendientes" tabindex="-1">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
       Pendientes Finnegans <span class="badge" id="bdgPend"></span>
+    </button>
+    <button class="tab" role="tab" id="tab-facturas" aria-controls="view-facturas" aria-selected="false" data-tab="facturas" tabindex="-1">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3h14v18l-3-2-2 2-2-2-2 2-2-2-3 2z"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>
+      Control de facturas <span class="badge" id="bdgFact"></span>
     </button>
   </div>
 </nav>
@@ -446,6 +454,87 @@
         </table>
       </div>
     </section>
+  </section>
+
+  <!-- CONTROL DE FACTURAS -->
+  <section class="view" id="view-facturas" role="tabpanel" aria-labelledby="tab-facturas" hidden>
+    <p class="intro">Cargá los traslados certificados de Finnegans y el detalle que manda el comprador como justificativo de la factura. Se cruzan por CTG y se comparan los kg neto destino de la factura con los kg recibidos en Finnegans.</p>
+    <section class="load-fact load" aria-label="Archivos del control de facturas">
+      <div class="src-box">
+        <div class="src-head">
+          <span class="step">1</span>
+          <div><h2>Traslados certificados de Finnegans</h2><p>El Reporte de Control de Entregas con los traslados certificados (columnas Recibida y Certificada).</p></div>
+        </div>
+        <label class="drop" data-fmode="cert" for="fileCert">
+          <input type="file" id="fileCert" multiple accept=".xlsx,.xls">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h6M12 11v8"/></svg>
+          <strong>Arrastrá o elegí el Excel de Finnegans</strong>
+          <span>.xlsx o .xls</span>
+        </label>
+        <ul class="src-files" id="listCert"></ul>
+      </div>
+      <div class="src-box">
+        <div class="src-head">
+          <span class="step">2</span>
+          <div><h2>Detalle de la factura</h2><p>El Excel que manda el comprador como justificativo de la factura, con los kg neto destino de cada carta de porte.</p></div>
+        </div>
+        <label class="drop" data-fmode="fac" for="fileFac">
+          <input type="file" id="fileFac" multiple accept=".xlsx,.xls">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3h14v18l-3-2-2 2-2-2-2 2-2-2-3 2z"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>
+          <strong>Arrastrá o elegí el detalle de la factura</strong>
+          <span>.xlsx o .xls</span>
+        </label>
+        <ul class="src-files" id="listFac"></ul>
+      </div>
+    </section>
+
+    <div class="card empty-state" id="factEmpty">
+      <h2>Faltan archivos para el control</h2>
+      <p id="factEmptyTxt">Cargá los dos archivos: el reporte de Finnegans y el detalle de la factura.</p>
+    </div>
+
+    <div id="factRes" class="view" hidden>
+      <section class="card" aria-labelledby="hFactRes">
+        <div class="card-head"><h2 id="hFactRes">Resultado del control</h2><span class="sub" id="factSub"></span></div>
+        <div class="card-body">
+          <div class="status-bar" id="factBar" role="img"></div>
+          <div class="status-grid g4" id="factGrid"></div>
+          <p class="small muted" id="factTot" style="margin:12px 0 0"></p>
+        </div>
+      </section>
+      <section class="card" aria-labelledby="hFactTbl">
+        <div class="card-head" style="padding-bottom:14px;border-bottom:1px solid var(--line)">
+          <h2 id="hFactTbl">Traslados para revisar</h2>
+          <div class="toolbar">
+            <select id="factFiltro" aria-label="Qué traslados mostrar">
+              <option value="rev">Para revisar (todo lo que no coincide)</option>
+              <option value="dif">No coinciden los kg</option>
+              <option value="nofin">No están en Finnegans</option>
+              <option value="sinkg">Sin kg para comparar</option>
+              <option value="ok">Coinciden</option>
+              <option value="all">Todos</option>
+            </select>
+            <span class="count" id="factCount"></span>
+            <button class="btn" type="button" id="btnFactXls">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+              Descargar reporte
+            </button>
+          </div>
+        </div>
+        <div class="scroll tall">
+          <table>
+            <thead><tr>
+              <th>Estado</th><th>Carta de porte</th><th>CTG</th><th>Producto</th>
+              <th class="num">Kg neto destino (factura)</th><th class="num">Kg recibidos (Finnegans)</th><th class="num">Diferencia</th>
+              <th class="num">Kg origen</th><th class="num">Kg finales</th><th>Certificado</th>
+            </tr></thead>
+            <tbody id="factTbody"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <div class="load-actions"><span></span><button class="btn" id="btnFactClear" type="button">Vaciar control de facturas</button></div>
   </section>
 </main>
 
@@ -1276,7 +1365,7 @@
       '<button class="x" type="button" data-rm="' + i + '" aria-label="Quitar ' + esc(f.name) + '"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></li>';
   }
   function renderFiles(){
-    $("#sampleNote").hidden = !state.sample;
+    $("#sampleNote").hidden = !state.sample || tab === "facturas";
     var fin = [], buy = [];
     if (!state.sample) state.files.forEach(function(f, i){ (f.fin ? fin : buy).push(fileItem(f, i)); });
     $("#listFin").innerHTML = fin.join("") || '<li class="muted small">Todavía no cargaste el listado de Finnegans.</li>';
@@ -1448,6 +1537,7 @@
     $("#btnImportLabel").textContent = ni ? "IMPORTCERT para Finnegans (" + ni + ")" : "IMPORTCERT para Finnegans";
     btn.disabled = !downloads || !n;
     $("#btnImport").disabled = !downloads || !ni;
+    $("#btnFactXls").disabled = !downloads || !factLast.length;
     if (downloadsResolved && !downloads){
       hint.hidden = false;
       hint.textContent = "La descarga no está disponible en esta vista.";
@@ -1640,8 +1730,246 @@
     });
   }
 
+  /* ---------- control de facturas ---------- */
+  // Compara los kg neto destino del detalle de la factura del comprador con los kg recibidos de Finnegans, por CTG.
+  var LSF = LS + ".facturas";
+  var fact = {cert:[], fac:[], files:[]};
+  function factLoad(){
+    try {
+      var j = JSON.parse(localStorage.getItem(LSF) || "null");
+      if (j){ fact.cert = j.cert || []; fact.fac = j.fac || []; fact.files = j.files || []; }
+    } catch(e){}
+  }
+  function factSave(){ try { localStorage.setItem(LSF, JSON.stringify(fact)); } catch(e){} }
+  function txt(v){ return v == null ? "" : String(v).trim(); }
+  // Reporte de Control de Entregas de Finnegans con los traslados certificados
+  var CERT = {
+    cp: DESC.cp, ctg: DESC.ctg,
+    fecha:[function(x){ return x === "fechadescarga"; }, function(x){ return x === "fecha"; }],
+    cliente:[function(x){ return x === "cliente"; }],
+    prod:[function(x){ return x === "producto"; }],
+    origen:[function(x){ return x === "cantidadorigen"; }],
+    recibida:[function(x){ return x === "recibida"; }],
+    fin:[function(x){ return x === "certificada"; }],
+    certif:[function(x){ return x === "certificado"; }, function(x){ return x === "nrocertificado"; }]
+  };
+  // Detalle de la factura del comprador (La Costa Cereales: x_ctg, neto_destino, NROSUC/NROORD, nombreMe)
+  var FAC = {
+    ctg:[function(x){ return x === "xctg"; }, function(x){ return x === "ctg" || x === "nroctg"; }],
+    neto:[function(x){ return x === "netodestino" || x === "kgnetodestino" || x === "netodestinokg" || x === "kgdestino"; }],
+    suc:[function(x){ return x === "nrosuc"; }],
+    ord:[function(x){ return x === "nroord"; }],
+    cp:[function(x){ return x.indexOf("cartadeporte") === 0; }],
+    prod:[function(x){ return x === "nombreme" || x === "producto" || x === "grano"; }]
+  };
+  function detectBy(def, need){
+    return function(aoa){
+      for (var r = 0; r < Math.min(aoa.length, 25); r++){
+        var hk = (aoa[r] || []).map(k), m = mapCols(hk, def);
+        if (need.every(function(n){ return m[n] >= 0; })) return {r:r, m:m};
+      }
+      return null;
+    };
+  }
+  var detectCert = detectBy(CERT, ["ctg", "recibida"]);
+  var detectFac = detectBy(FAC, ["ctg", "neto"]);
+  function cell(row, i){ return i >= 0 ? row[i] : null; }
+  function parseCert(aoa, h, name){
+    var m = h.m, out = [];
+    aoa.slice(h.r + 1).forEach(function(row){
+      if (!row) return;
+      var id = parseCpCtg(cell(row, m.cp), cell(row, m.ctg));
+      if (!id.ctg) return;
+      out.push({ctg:id.ctg, cp:id.cp, fecha:parseDate(cell(row, m.fecha)), cliente:txt(cell(row, m.cliente)), prod:txt(cell(row, m.prod)),
+        origen:toNum(cell(row, m.origen)), recibida:toNum(cell(row, m.recibida)), fin:toNum(cell(row, m.fin)), certif:txt(cell(row, m.certif)), file:name});
+    });
+    return out;
+  }
+  function parseFac(aoa, h, name){
+    var m = h.m, out = [];
+    aoa.slice(h.r + 1).forEach(function(row){
+      if (!row) return;
+      var ctg = parseCpCtg(null, cell(row, m.ctg)).ctg;
+      if (!ctg) return;
+      var cp = "", suc = toNum(cell(row, m.suc)), ord = toNum(cell(row, m.ord));
+      if (ord != null) cp = String(Math.round(suc || 0)).padStart(5, "0") + "-" + String(Math.round(ord)).padStart(8, "0");
+      else if (m.cp >= 0) cp = parseCpCtg(cell(row, m.cp), null).cp;
+      var neto = toNum(cell(row, m.neto));
+      out.push({ctg:ctg, cp:cp, prod:txt(cell(row, m.prod)), neto:neto == null ? null : Math.round(neto), file:name});
+    });
+    return out;
+  }
+  function addFact(kind, rows, name){
+    fact[kind] = fact[kind].filter(function(r){ return r.file !== name; });
+    var idx = new Map(fact[kind].map(function(r, i){ return [r.ctg, i]; }));
+    rows.forEach(function(r){
+      if (idx.has(r.ctg)) fact[kind][idx.get(r.ctg)] = r;
+      else { idx.set(r.ctg, fact[kind].length); fact[kind].push(r); }
+    });
+    fact.files = fact.files.filter(function(f){ return f.name !== name; });
+    fact.files.push({name:name, kind:kind, count:rows.length});
+  }
+  function handleFact(fileList, mode){
+    var files = Array.prototype.filter.call(fileList, function(f){ return /\.(xlsx|xls)$/i.test(f.name); });
+    if (!files.length){ toast("Elegí archivos .xlsx o .xls"); return; }
+    if (typeof XLSX === "undefined"){ toast("No se pudo cargar el lector de Excel. Recargá la página."); return; }
+    var nC = 0, nF = 0, errs = 0;
+    Promise.all(files.map(function(f){
+      return f.arrayBuffer().then(function(buf){
+        var wb = XLSX.read(new Uint8Array(buf), {type:"array"});
+        for (var i = 0; i < wb.SheetNames.length; i++){
+          var aoa = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[i]], {header:1, raw:true, defval:null, blankrows:false});
+          var hc = detectCert(aoa), hf = detectFac(aoa), rows;
+          if (hc && !(mode === "fac" && hf)){ rows = parseCert(aoa, hc, f.name); addFact("cert", rows, f.name); nC += rows.length; return; }
+          if (hf){ rows = parseFac(aoa, hf, f.name); addFact("fac", rows, f.name); nF += rows.length; return; }
+        }
+        throw new Error(mode === "cert" ? "no encontré las columnas Ctg y Recibida" : "no encontré las columnas de CTG y neto destino");
+      }).catch(function(e){
+        errs++;
+        fact.files = fact.files.filter(function(x){ return x.name !== f.name; });
+        fact.files.push({name:f.name, kind:mode === "fac" ? "fac" : "cert", error:"No se pudo leer: " + (e && e.message ? e.message : "formato desconocido")});
+      });
+    })).then(function(){
+      factSave(); factRender();
+      var parts = [];
+      if (nC) parts.push(nC + " traslados de Finnegans");
+      if (nF) parts.push(nF + " cartas del detalle de la factura");
+      if (errs) parts.push(errs + " archivo(s) con error");
+      toast(parts.length ? parts.join(" · ") : "No se pudo leer ningún archivo", errs ? 5000 : 3200);
+    });
+  }
+
+  var FEST = {
+    dif:{txt:"No coincide", cls:"bad", color:"#D03B3B", orden:0},
+    nofin:{txt:"No está en Finnegans", cls:"warn", color:"var(--st-warn)", orden:1},
+    sinkg:{txt:"Sin kg para comparar", cls:"mute", color:"var(--st-none)", orden:2},
+    ok:{txt:"Coincide", cls:"ok", color:"var(--st-good)", orden:3}
+  };
+  function factRows(){
+    var byCtg = new Map(fact.cert.map(function(c){ return [c.ctg, c]; }));
+    return fact.fac.map(function(f){
+      var c = byCtg.get(f.ctg) || null, estado, dif = null, nota = "";
+      if (f.neto == null){ estado = "sinkg"; nota = "la factura no trae kg"; }
+      else if (!c) estado = "nofin";
+      else if (c.recibida == null){ estado = "sinkg"; nota = "Finnegans no tiene kg recibidos"; }
+      else { dif = f.neto - c.recibida; estado = dif === 0 ? "ok" : "dif"; }
+      return {f:f, c:c, estado:estado, dif:dif, nota:nota};
+    }).sort(function(a, b){
+      return FEST[a.estado].orden - FEST[b.estado].orden || Math.abs(b.dif || 0) - Math.abs(a.dif || 0) || a.f.ctg.localeCompare(b.f.ctg);
+    });
+  }
+  function factFiltered(rows){
+    var v = $("#factFiltro").value;
+    return rows.filter(function(r){ return v === "all" || (v === "rev" ? r.estado !== "ok" : r.estado === v); });
+  }
+  var factLast = [];
+  function factItem(f, i){
+    var meta = f.error ? esc(f.error) : f.count + (f.kind === "cert" ? " traslados" : " cartas de porte");
+    return '<li class="file' + (f.error ? " err" : "") + '"><div><div class="nm">' + esc(f.name) + '</div><div class="meta">' + meta + "</div></div>" +
+      '<button class="x" type="button" data-frm="' + i + '" aria-label="Quitar ' + esc(f.name) + '"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></li>';
+  }
+  function signed(n){ return n > 0 ? "+" + n : String(n); }
+  function factRender(){
+    var cert = [], fac = [];
+    fact.files.forEach(function(f, i){ (f.kind === "cert" ? cert : fac).push(factItem(f, i)); });
+    $("#listCert").innerHTML = cert.join("") || '<li class="muted small">Todavía no cargaste el reporte de Finnegans.</li>';
+    $("#listFac").innerHTML = fac.join("") || '<li class="muted small">Todavía no cargaste el detalle de la factura.</li>';
+    var listo = fact.cert.length && fact.fac.length;
+    $("#factEmpty").hidden = !!listo;
+    $("#factRes").hidden = !listo;
+    $("#factEmptyTxt").textContent = !fact.cert.length && !fact.fac.length ? "Cargá los dos archivos: el reporte de Finnegans y el detalle de la factura."
+      : !fact.cert.length ? "Falta el reporte de traslados certificados de Finnegans." : "Falta el detalle de la factura del comprador.";
+    if (!listo){ $("#bdgFact").textContent = ""; factLast = []; return; }
+
+    var rows = factRows(), n = {dif:0, nofin:0, sinkg:0, ok:0}, kgF = 0, kgR = 0;
+    rows.forEach(function(r){ n[r.estado]++; if (r.estado === "ok" || r.estado === "dif"){ kgF += r.f.neto; kgR += r.c.recibida; } });
+    var revisar = rows.length - n.ok;
+    $("#bdgFact").textContent = revisar ? String(revisar) : "";
+    $("#factSub").textContent = rows.length + (rows.length === 1 ? " carta de porte en la factura" : " cartas de porte en la factura");
+    var bar = $("#factBar");
+    bar.replaceChildren();
+    bar.setAttribute("aria-label", ["ok", "dif", "nofin", "sinkg"].map(function(e){ return FEST[e].txt + ": " + n[e]; }).join(", "));
+    ["ok", "dif", "nofin", "sinkg"].forEach(function(e){
+      if (!n[e]) return;
+      var s = document.createElement("span");
+      s.style.flex = n[e] + " 1 0"; s.style.background = FEST[e].color; s.title = FEST[e].txt + ": " + n[e];
+      bar.appendChild(s);
+    });
+    $("#factGrid").innerHTML = ["ok", "dif", "nofin", "sinkg"].map(function(e){
+      return '<button type="button" class="status-item" data-ffil="' + e + '"><span class="l"><i class="sw" style="background:' + FEST[e].color + '"></i>' +
+        FEST[e].txt + '</span><span class="n">' + n[e] + '</span><span class="p">' + fmtPct(rows.length ? n[e] / rows.length * 100 : 0, 0) + " de las cartas</span></button>";
+    }).join("");
+    $("#factTot").textContent = "Cartas comparadas: " + big(kgF) + " kg según la factura y " + big(kgR) + " kg recibidos en Finnegans · diferencia " +
+      (kgF - kgR > 0 ? "+" : "") + big(kgF - kgR) + " kg.";
+
+    var list = factFiltered(rows);
+    factLast = list;
+    $("#factCount").textContent = list.length + " de " + rows.length;
+    $("#hFactTbl").textContent = $("#factFiltro").value === "rev" ? "Traslados para revisar" : "Traslados";
+    $("#factTbody").innerHTML = list.length ? list.map(function(r){
+      var c = r.c || {}, e = FEST[r.estado];
+      return '<tr class="' + (r.estado === "dif" ? "bad" : r.estado === "ok" ? "" : "warn") + '"><td><span class="pill ' + e.cls + '"' + (r.nota ? ' title="' + esc(r.nota) + '"' : "") + ">" + e.txt + "</span></td>" +
+        '<td class="code">' + esc(c.cp || r.f.cp) + '</td><td class="code">' + esc(r.f.ctg) + "</td><td>" + esc(r.f.prod || c.prod || "") + "</td>" +
+        '<td class="num">' + fmtKg(r.f.neto) + '</td><td class="num">' + fmtKg(c.recibida) + '</td><td class="num' + (r.dif ? " pos" : "") + '">' + (r.dif == null ? "" : signed(r.dif)) + "</td>" +
+        '<td class="num">' + fmtKg(c.origen) + '</td><td class="num">' + fmtKg(c.fin) + '</td><td class="code">' + esc(c.certif || "") + "</td></tr>";
+    }).join("") : '<tr class="empty"><td colspan="10">' + (n.ok === rows.length ? "Todos los kg coinciden con Finnegans." : "No hay traslados con este filtro.") + "</td></tr>";
+    $("#btnFactXls").disabled = !downloads || !list.length;
+  }
+  function exportFact(){
+    if (!downloads || !factLast.length) return;
+    var head = ["Estado","Carta de Porte","CTG","Producto","Kg neto destino (factura)","Kg recibidos (Finnegans)","Diferencia","Kg origen","Kg finales","Certificado"];
+    var aoa = [head];
+    factLast.forEach(function(r){
+      var c = r.c || {};
+      aoa.push([FEST[r.estado].txt + (r.nota ? " (" + r.nota + ")" : ""), c.cp || r.f.cp, Number(r.f.ctg), r.f.prod || c.prod || "", r.f.neto, c.recibida == null ? null : c.recibida,
+        r.dif, c.origen == null ? null : c.origen, c.fin == null ? null : c.fin, c.certif || ""]);
+    });
+    var ws = XLSX.utils.aoa_to_sheet(aoa);
+    for (var R = 1; R < aoa.length; R++){
+      [2, 4, 5, 6, 7, 8].forEach(function(C){ var cl = ws[XLSX.utils.encode_cell({r:R, c:C})]; if (cl && cl.t === "n") cl.z = "0"; });
+    }
+    ws["!cols"] = [{wch:40},{wch:17},{wch:14},{wch:18},{wch:22},{wch:22},{wch:11},{wch:11},{wch:11},{wch:18}];
+    var wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Control");
+    var buf;
+    try { buf = XLSX.write(wb, {bookType:"xlsx", type:"array"}); } catch(e){ toast("No se pudo armar el Excel."); return; }
+    saveFile("Control facturas " + stamp("-") + ".xlsx", buf, "Reporte descargado · " + factLast.length + " cartas");
+  }
+  $("#fileCert").addEventListener("change", function(e){ handleFact(e.target.files, "cert"); e.target.value = ""; });
+  $("#fileFac").addEventListener("change", function(e){ handleFact(e.target.files, "fac"); e.target.value = ""; });
+  $("#factFiltro").addEventListener("change", factRender);
+  $("#btnFactXls").addEventListener("click", exportFact);
+  $("#view-facturas").addEventListener("click", function(e){
+    var rm = e.target.closest("[data-frm]");
+    if (rm){
+      var f = fact.files[+rm.getAttribute("data-frm")]; if (!f) return;
+      fact.cert = fact.cert.filter(function(r){ return r.file !== f.name; });
+      fact.fac = fact.fac.filter(function(r){ return r.file !== f.name; });
+      fact.files.splice(+rm.getAttribute("data-frm"), 1);
+      factSave(); factRender(); toast("Quitado: " + f.name);
+      return;
+    }
+    var fil = e.target.closest("[data-ffil]");
+    if (fil){ $("#factFiltro").value = fil.getAttribute("data-ffil"); factRender(); $("#factTbody").closest(".card").scrollIntoView({behavior:"smooth", block:"start"}); }
+  });
+  var factArm;
+  $("#btnFactClear").addEventListener("click", function(){
+    var b = this;
+    if (!b.classList.contains("armed")){
+      b.classList.add("armed"); b.textContent = "Confirmar: vaciar";
+      clearTimeout(factArm);
+      factArm = setTimeout(function(){ b.classList.remove("armed"); b.textContent = "Vaciar control de facturas"; }, 4000);
+      return;
+    }
+    clearTimeout(factArm);
+    b.classList.remove("armed"); b.textContent = "Vaciar control de facturas";
+    fact = {cert:[], fac:[], files:[]};
+    try { localStorage.removeItem(LSF); } catch(e){}
+    factRender(); toast("Se vació el control de facturas");
+  });
+
   /* ---------- pestañas ---------- */
-  var TABS = ["resumen", "cargar", "cartas", "pendientes"], tab = "resumen";
+  var TABS = ["resumen", "cargar", "cartas", "pendientes", "facturas"], tab = "resumen";
   function showTab(name, focus){
     if (TABS.indexOf(name) < 0) name = "resumen";
     tab = name;
@@ -1651,7 +1979,8 @@
       b.tabIndex = on ? 0 : -1;
       $("#view-" + t).hidden = !on;
     });
-    $("#filterbar").hidden = name === "cargar";
+    $("#filterbar").hidden = name === "cargar" || name === "facturas";
+    $("#sampleNote").hidden = !state.sample || name === "facturas";
     tipHide();
     try { localStorage.setItem(LS + ".tab", name); } catch(e){}
     try { if (location.hash.slice(1) !== name) history.replaceState(null, "", "#" + name); } catch(e){}
@@ -1701,7 +2030,9 @@
     d.addEventListener("drop", function(e){
       e.preventDefault(); e.stopPropagation();
       drops.forEach(function(x){ x.classList.remove("over"); });
-      if (e.dataTransfer && e.dataTransfer.files.length) handleFiles(e.dataTransfer.files, d.getAttribute("data-mode"));
+      if (!e.dataTransfer || !e.dataTransfer.files.length) return;
+      if (d.hasAttribute("data-fmode")) handleFact(e.dataTransfer.files, d.getAttribute("data-fmode"));
+      else handleFiles(e.dataTransfer.files, d.getAttribute("data-mode"));
     });
   });
   // Grano elegido a mano para archivos que no lo traen (ACA)
@@ -1717,7 +2048,9 @@
   window.addEventListener("drop", function(e){
     e.preventDefault();
     drops.forEach(function(x){ x.classList.remove("over"); });
-    if (e.dataTransfer && e.dataTransfer.files.length){ handleFiles(e.dataTransfer.files, "auto"); showTab("cargar"); }
+    if (!e.dataTransfer || !e.dataTransfer.files.length) return;
+    if (tab === "facturas") handleFact(e.dataTransfer.files, "auto");
+    else { handleFiles(e.dataTransfer.files, "auto"); showTab("cargar"); }
   });
   $(".load").addEventListener("click", function(e){
     var b = e.target.closest("[data-rm]"); if (!b) return;
@@ -1766,9 +2099,11 @@
   else window.addEventListener("resize", onResize);
 
   load();
+  factLoad();
   var inicial = location.hash.slice(1);
   if (TABS.indexOf(inicial) < 0){ try { inicial = localStorage.getItem(LS + ".tab") || ""; } catch(e){ inicial = ""; } }
   render();
+  factRender();
   showTab(TABS.indexOf(inicial) >= 0 ? inicial : "resumen");
 
   // Abierto como archivo en el navegador (fuera de Claude): descarga común del navegador

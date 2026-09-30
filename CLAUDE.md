@@ -60,6 +60,19 @@ los compradores y arma el archivo IMPORTCERT para importar certificados en Finne
   - **La Costa Cereales:** ya viene en formato IMPORTCERT.
 - **Para sumar un comprador nuevo:** agregar un perfil en `PERFILES` con `test` (reconoce el encabezado) y `cols` (dónde está cada dato). Después comparar los totales contra un cálculo aparte antes de subirlo.
 
+## Pestaña "Control de facturas"
+Es independiente del IMPORTCERT y tiene sus propios datos (`fact`, guardados en localStorage con la clave `LSF`).
+- **Cuadro 1:** Reporte de Control de Entregas de Finnegans con los traslados certificados. Columnas: Ctg, Carta de porte, Cantidad origen (kg origen), Recibida (kg recibidos), Certificada (kg finales), Certificado.
+- **Cuadro 2:** detalle que manda el comprador como justificativo de la factura. Formato La Costa Cereales (LCC):
+  - `x_ctg`: CTG;
+  - `neto_destino`: kg de la factura;
+  - carta de porte = `NROSUC`-`NROORD` (5 + 8 dígitos);
+  - `nombreMe`: producto.
+- **Cruce por CTG:** `neto_destino` de la factura contra "Recibida" de Finnegans; tiene que dar exacto.
+- **Estados:** Coincide / No coincide / No está en Finnegans / Sin kg para comparar.
+- **Reporte:** lista las cartas que no coinciden con CP, CTG, kg de factura, kg recibidos, diferencia, kg origen, kg finales y certificado, y se descarga en Excel.
+- **Otros formatos de detalle:** agregar el nombre de su columna de kg en `FAC.neto` (y la de CTG en `FAC.ctg` si hace falta).
+
 ## Diseño
 - Franja verde AED (`--brand-deep`) con el logo Grupo Duhau embebido como webp, y cuatro pestañas: Resumen, Cargar archivos, Cartas de porte y Pendientes Finnegans.
 - Colores de gráficos, validados para daltonismo:
