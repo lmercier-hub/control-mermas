@@ -73,6 +73,19 @@ Es independiente del IMPORTCERT y tiene sus propios datos (`fact`, guardados en 
 - **Reporte:** lista las cartas que no coinciden con CP, CTG, kg de factura, kg recibidos, diferencia, kg origen, kg finales y certificado, y se descarga en Excel.
 - **Otros formatos de detalle:** agregar el nombre de su columna de kg en `FAC.neto` (y la de CTG en `FAC.ctg` si hace falta).
 
+## Datos compartidos (Firebase)
+- **Proyecto:** Firebase `control-mermas-b902e`, consola de Luis. La configuración web está en `FB_CONFIG` dentro de `index.html`; no es secreta.
+- **Ingreso:** con Google. Solo entran los mails que figuran en las reglas de Firestore. Hoy son `lmercier@admin.com.ar` y `jaquerreta@admin.com.ar`; copia de las reglas en `firestore.rules`.
+- **Para sumar a alguien:** agregar su mail en las reglas, en Firebase → Firestore → Reglas → Publicar, y actualizar `firestore.rules`.
+- **Colecciones:**
+  - `archivos`: un documento por Excel cargado, con nombre, tipo (`fin` | `buy` | `cert` | `fac`), meta, cantidad de partes, `subidoPor`, `subidoEn` y `orden`.
+  - `partes`: las filas de cada Excel, de a 400, con `archivoId` e `idx`. Solo se guardan los campos de `CAMPOS`; lo demás se recalcula en `rebuild()`.
+- **Sincronización:** cada navegador escucha las dos colecciones y rearma el tablero con `rebuild()`. No se guarda nada en localStorage salvo la pestaña elegida.
+- **Al cargar archivos:**
+  - un listado nuevo de Finnegans borra los anteriores;
+  - un archivo con el mismo nombre y tipo reemplaza al anterior.
+- **Quitar y vaciar:** quitar un archivo o "Vaciar todo" borra los documentos de la base para todos.
+
 ## Diseño
 - Franja verde AED (`--brand-deep`) con el logo Grupo Duhau embebido como webp, y cuatro pestañas: Resumen, Cargar archivos, Cartas de porte y Pendientes Finnegans.
 - Colores de gráficos, validados para daltonismo:

@@ -240,6 +240,18 @@
 
   .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:8px;font-weight:600;font-size:13px;max-width:calc(100% - 32px);opacity:0;pointer-events:none;transition:opacity .2s;z-index:40}
   .toast.show{opacity:1}
+  .userbox{width:100%;display:flex;flex-wrap:wrap;justify-content:flex-end;align-items:center;gap:6px 12px;font-size:12px;color:rgba(255,255,255,.85)}
+  .userbox .dot{width:8px;height:8px;border-radius:50%;background:#3FD06B;display:inline-block;margin-right:6px}
+  .userbox .dot.busy{background:var(--st-warn)}
+  .userbox .dot.off{background:#FF6B5E}
+  .userbox button{all:unset;cursor:pointer;color:#fff;text-decoration:underline;text-underline-offset:3px}
+  .userbox button:focus-visible{outline:2px solid #fff;outline-offset:2px}
+  .gate{position:fixed;inset:0;z-index:60;display:grid;place-items:center;padding:16px;background:rgba(8,22,13,.62)}
+  .gate-card{background:var(--surface);color:var(--ink);border-radius:14px;padding:28px 26px;max-width:440px;width:100%;display:grid;gap:14px;justify-items:start;box-shadow:0 18px 50px rgba(0,0,0,.3)}
+  .gate-card .logo{box-shadow:inset 0 0 0 1px var(--line)}
+  .gate-card .logo img{height:46px;width:auto}
+  .gate-card p{margin:0;color:var(--muted)}
+  .gate-btns{display:flex;flex-wrap:wrap;gap:8px}
   @media (prefers-reduced-motion: reduce){*{transition:none!important}}
 </style>
 <style>body{margin:0}</style>
@@ -261,6 +273,7 @@
       </button>
       <button class="btn onband" id="btnExport" type="button" disabled><span id="btnExportLabel">Excel de control</span></button>
       <div class="hint" id="exportHint" hidden></div>
+      <div class="userbox" id="userBox" hidden><span><i class="dot" id="syncDot"></i><span id="syncState">Conectando…</span></span><span id="userMail"></span><button type="button" id="btnLogout">Salir</button></div>
     </div>
   </div>
 </header>
@@ -308,9 +321,9 @@
   <!-- RESUMEN -->
   <section class="view" id="view-resumen" role="tabpanel" aria-labelledby="tab-resumen">
     <div class="card empty-state" id="resEmpty" hidden>
-      <h2>Todavía no hay datos cargados</h2>
-      <p>Cargá el listado de pendientes de Finnegans y las descargas de los compradores. El tablero cruza los CTG y te muestra qué hay que certificar.</p>
-      <button class="btn primary" type="button" data-go="cargar">Ir a Cargar archivos</button>
+      <h2 id="resEmptyT">Todavía no hay datos cargados</h2>
+      <p id="resEmptyP">Cargá el listado de pendientes de Finnegans y las descargas de los compradores. El tablero cruza los CTG y te muestra qué hay que certificar.</p>
+      <button class="btn primary" type="button" data-go="cargar" id="resEmptyB">Ir a Cargar archivos</button>
     </div>
     <div id="resBody" class="view">
       <section class="kpis" id="kpis" aria-label="Números principales"></section>
@@ -536,7 +549,21 @@
 
 <div class="tip" id="tip" role="status" hidden></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
+<div class="gate" id="gate" hidden>
+  <div class="gate-card" role="dialog" aria-modal="true" aria-labelledby="gateTitle">
+    <span class="logo"><img id="gateLogo" alt="AED y Economart, Grupo Duhau"></span>
+    <h2 id="gateTitle">Control de Mermas</h2>
+    <p id="gateTxt">Conectando con la base de datos…</p>
+    <div class="gate-btns">
+      <button class="btn primary" type="button" id="btnLogin" hidden>Entrar con Google</button>
+      <button class="btn" type="button" id="btnOtra" hidden>Entrar con otra cuenta</button>
+    </div>
+  </div>
+</div>
 
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
 (function(){
@@ -1015,27 +1042,8 @@
   /* ---------- estado ---------- */
   // Un camión se identifica por su CTG (la carta de porte cambia de formato según quién la informa)
   function rowKey(r){ return r.ctg ? "t:" + r.ctg : "c:" + cpDigits(r.cp); }
-  function load(){
-    try {
-      var j = JSON.parse(localStorage.getItem(LS) || "null");
-      if (j && ((Array.isArray(j.rows) && j.rows.length) || (Array.isArray(j.pend) && j.pend.length))){
-        state.rows = (j.rows || []).map(function(r){
-          if (r.mhAc === undefined) r.mhAc = r.mh; // filas guardadas antes de usar la tabla de humedad
-          if (r.finAc === undefined) r.finAc = r.fin; // filas guardadas antes de los perfiles por comprador
-          return derive(r);
-        });
-        state.pend = j.pend || [];
-        state.files = j.files || [];
-        return;
-      }
-    } catch(e){}
-    state.rows = []; state.files = []; state.pend = [];
-  }
-  function persist(){
-    try { localStorage.setItem(LS, JSON.stringify({rows:state.rows, pend:state.pend, files:state.files})); } catch(e){}
-  }
   // El primer listado de Finnegans de cada carga reemplaza a los anteriores; los demás de la misma carga se suman
-  function addPend(res, fileName, fresh){
+  function addPend(res, fileName, fresh, doc){
     if (fresh){
       state.pend = [];
       state.files = state.files.filter(function(f){ return !f.fin; });
@@ -1050,9 +1058,9 @@
       vistos.add(kk); state.pend.push(p);
     });
     state.files = state.files.filter(function(f){ return !(f.fin && f.name === fileName); });
-    state.files.push({name:fileName, fin:true, count:res.rows.length, repetidas:repetidas, certificadas:res.certificadas, emps:Array.from(res.emps).sort()});
+    state.files.push({name:fileName, fin:true, count:res.rows.length, repetidas:repetidas, certificadas:res.certificadas, emps:Array.from(res.emps).sort(), id:doc && doc.id, por:doc && doc.por, en:doc && doc.en});
   }
-  function addRows(rows, fileName, info){
+  function addRows(rows, fileName, info, doc){
     var idx = new Map(state.rows.map(function(r, i){ return [rowKey(r), i]; }));
     var added = 0, replaced = 0, dup = 0;
     rows.forEach(function(r){
@@ -1068,7 +1076,7 @@
       state.rows[i] = derive(win);
     });
     state.files = state.files.filter(function(f){ return f.name !== fileName; });
-    state.files.push({name:fileName, count:rows.length, added:added, replaced:replaced, dup:dup, noCal:!info.hasCal, fmt:info.fmt || "", needsGrain:!!info.needsGrain, grain:""});
+    state.files.push({name:fileName, count:rows.length, added:added, replaced:replaced, dup:dup, noCal:!info.hasCal, fmt:info.fmt || "", needsGrain:!!info.needsGrain, grain:info.grain || "", id:doc && doc.id, por:doc && doc.por, en:doc && doc.en});
   }
 
   /* ---------- cruce con Finnegans ---------- */
@@ -1335,6 +1343,7 @@
         (f.repetidas ? " · " + f.repetidas + " ya estaban en otro listado" : "") + (f.certificadas ? " · " + f.certificadas + " ya certificadas" : "")
       : (f.fmt ? esc(f.fmt) + " · " : "") + f.count + " cartas" + (f.replaced ? " · " + f.replaced + " actualizadas" : "") +
         (f.dup ? " · " + f.dup + " también en otro archivo" : "") + (f.noCal ? " · sin hoja Calidad" : "");
+    if (!f.error) meta += quien(f);
     if (f.needsGrain){
       meta += '<div class="grain"><label for="grain' + i + '">Grano:</label> <select id="grain' + i + '" data-grain="' + i + '">' +
         '<option value="">Elegí…</option>' + GRANOS.map(function(g){ return '<option' + (f.grain === g.label ? " selected" : "") + ">" + g.label + "</option>"; }).join("") + "</select></div>";
@@ -1345,6 +1354,7 @@
   function renderFiles(){
     var fin = [], buy = [];
     state.files.forEach(function(f, i){ (f.fin ? fin : buy).push(fileItem(f, i)); });
+    errLocal.forEach(function(e){ (e.fin ? fin : buy).push(errItem(e)); });
     $("#listFin").innerHTML = fin.join("") || '<li class="muted small">Todavía no cargaste el listado de Finnegans.</li>';
     $("#listBuy").innerHTML = buy.join("") || '<li class="muted small">Todavía no cargaste descargas del comprador.</li>';
     var nOk = state.files.filter(function(f){ return !f.error; }).length;
@@ -1541,8 +1551,12 @@
     lastList = base;
     var tableList = filtered(false);
     var vacio = !state.rows.length && !state.pend.length;
+    var esperando = !!usuario && !(listos.a && listos.p);
     $("#resEmpty").hidden = !vacio;
     $("#resBody").hidden = vacio;
+    $("#resEmptyT").textContent = esperando ? "Cargando los datos compartidos…" : "Todavía no hay datos cargados";
+    $("#resEmptyP").hidden = esperando;
+    $("#resEmptyB").hidden = esperando;
     $("#bdgCartas").textContent = state.rows.length ? String(base.length) : "";
 
     renderFiles(); renderKpis(t, base); renderEstado(); renderAvisos(base);
@@ -1572,10 +1586,13 @@
     var files = Array.prototype.filter.call(fileList, function(f){ return /\.(xlsx|xls)$/i.test(f.name); });
     if (!files.length){ toast("Elegí archivos .xlsx o .xls"); return; }
     if (typeof XLSX === "undefined"){ toast("No se pudo cargar el lector de Excel. Recargá la página."); return; }
-    var total = 0, pend = 0, errs = 0, moved = 0, fresh = true;
+    if (!puedeEscribir()) return;
+    var total = 0, pend = 0, errs = 0, moved = 0, jobs = [], hayFin = false;
+    errLocal = [];
     function asFin(aoa, h, name){
       var fr = processFinnegans(aoa, h, name);
-      addPend(fr, name, fresh); fresh = false;
+      jobs.push({tipo:"fin", nombre:name, filas:fr.rows, meta:{certificadas:fr.certificadas || 0, emps:Array.from(fr.emps)}});
+      hayFin = true;
       pend += fr.rows.length;
     }
     Promise.all(files.map(function(f){
@@ -1600,7 +1617,7 @@
         }
         if (res){
           if (mode === "fin") moved++;
-          addRows(res.rows, f.name, res);
+          jobs.push({tipo:"buy", nombre:f.name, filas:res.rows, meta:{hasCal:!!res.hasCal, fmt:res.fmt || "", needsGrain:!!res.needsGrain, grain:""}});
           total += res.rows.length;
           return;
         }
@@ -1612,17 +1629,19 @@
         throw err || new Error("no encontré columnas de Carta de Porte o CTG");
       }).catch(function(e){
         errs++;
-        state.files = state.files.filter(function(x){ return x.name !== f.name; });
-        state.files.push({name:f.name, fin:mode === "fin", error:"No se pudo leer: " + (e && e.message ? e.message : "formato desconocido")});
+        errLocal.push({name:f.name, fin:mode === "fin", error:"No se pudo leer: " + (e && e.message ? e.message : "formato desconocido")});
       });
     })).then(function(){
-      persist(); render();
+      render();
       var parts = [];
       if (pend) parts.push(pend + " pendientes de Finnegans");
       if (total) parts.push(total + " cartas del comprador");
       if (moved) parts.push(moved + " archivo(s) pasado(s) al otro cuadro");
       if (errs) parts.push(errs + " archivo(s) con error");
-      toast(parts.length ? parts.join(" · ") : "No se pudo leer ningún archivo", errs || moved ? 5000 : 3200);
+      var msg = parts.length ? parts.join(" · ") : "No se pudo leer ningún archivo";
+      if (!jobs.length){ toast(msg, 5000); return; }
+      toast("Guardando en la base compartida…", 8000);
+      subir(jobs, hayFin).then(function(){ toast(msg + " · guardado", errs || moved ? 5000 : 3200); }, function(){});
     });
   }
 
@@ -1710,13 +1729,6 @@
   // Compara los kg neto destino del detalle de la factura del comprador con los kg recibidos de Finnegans, por CTG.
   var LSF = LS + ".facturas";
   var fact = {cert:[], fac:[], files:[]};
-  function factLoad(){
-    try {
-      var j = JSON.parse(localStorage.getItem(LSF) || "null");
-      if (j){ fact.cert = j.cert || []; fact.fac = j.fac || []; fact.files = j.files || []; }
-    } catch(e){}
-  }
-  function factSave(){ try { localStorage.setItem(LSF, JSON.stringify(fact)); } catch(e){} }
   function txt(v){ return v == null ? "" : String(v).trim(); }
   // Reporte de Control de Entregas de Finnegans con los traslados certificados
   var CERT = {
@@ -1775,7 +1787,7 @@
     });
     return out;
   }
-  function addFact(kind, rows, name){
+  function addFact(kind, rows, name, doc){
     fact[kind] = fact[kind].filter(function(r){ return r.file !== name; });
     var idx = new Map(fact[kind].map(function(r, i){ return [r.ctg, i]; }));
     rows.forEach(function(r){
@@ -1783,35 +1795,39 @@
       else { idx.set(r.ctg, fact[kind].length); fact[kind].push(r); }
     });
     fact.files = fact.files.filter(function(f){ return f.name !== name; });
-    fact.files.push({name:name, kind:kind, count:rows.length});
+    fact.files.push({name:name, kind:kind, count:rows.length, id:doc && doc.id, por:doc && doc.por, en:doc && doc.en});
   }
   function handleFact(fileList, mode){
     var files = Array.prototype.filter.call(fileList, function(f){ return /\.(xlsx|xls)$/i.test(f.name); });
     if (!files.length){ toast("Elegí archivos .xlsx o .xls"); return; }
     if (typeof XLSX === "undefined"){ toast("No se pudo cargar el lector de Excel. Recargá la página."); return; }
-    var nC = 0, nF = 0, errs = 0;
+    if (!puedeEscribir()) return;
+    var nC = 0, nF = 0, errs = 0, jobs = [];
+    errFact = [];
     Promise.all(files.map(function(f){
       return f.arrayBuffer().then(function(buf){
         var wb = XLSX.read(new Uint8Array(buf), {type:"array"});
         for (var i = 0; i < wb.SheetNames.length; i++){
           var aoa = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[i]], {header:1, raw:true, defval:null, blankrows:false});
           var hc = detectCert(aoa), hf = detectFac(aoa), rows;
-          if (hc && !(mode === "fac" && hf)){ rows = parseCert(aoa, hc, f.name); addFact("cert", rows, f.name); nC += rows.length; return; }
-          if (hf){ rows = parseFac(aoa, hf, f.name); addFact("fac", rows, f.name); nF += rows.length; return; }
+          if (hc && !(mode === "fac" && hf)){ rows = parseCert(aoa, hc, f.name); jobs.push({tipo:"cert", nombre:f.name, filas:rows, meta:{}}); nC += rows.length; return; }
+          if (hf){ rows = parseFac(aoa, hf, f.name); jobs.push({tipo:"fac", nombre:f.name, filas:rows, meta:{}}); nF += rows.length; return; }
         }
         throw new Error(mode === "cert" ? "no encontré las columnas Ctg y Recibida" : "no encontré las columnas de CTG y neto destino");
       }).catch(function(e){
         errs++;
-        fact.files = fact.files.filter(function(x){ return x.name !== f.name; });
-        fact.files.push({name:f.name, kind:mode === "fac" ? "fac" : "cert", error:"No se pudo leer: " + (e && e.message ? e.message : "formato desconocido")});
+        errFact.push({name:f.name, kind:mode === "fac" ? "fac" : "cert", error:"No se pudo leer: " + (e && e.message ? e.message : "formato desconocido")});
       });
     })).then(function(){
-      factSave(); factRender();
+      factRender();
       var parts = [];
       if (nC) parts.push(nC + " traslados de Finnegans");
       if (nF) parts.push(nF + " cartas del detalle de la factura");
       if (errs) parts.push(errs + " archivo(s) con error");
-      toast(parts.length ? parts.join(" · ") : "No se pudo leer ningún archivo", errs ? 5000 : 3200);
+      var msg = parts.length ? parts.join(" · ") : "No se pudo leer ningún archivo";
+      if (!jobs.length){ toast(msg, 5000); return; }
+      toast("Guardando en la base compartida…", 8000);
+      subir(jobs, false).then(function(){ toast(msg + " · guardado", errs ? 5000 : 3200); }, function(){});
     });
   }
 
@@ -1840,7 +1856,7 @@
   }
   var factLast = [];
   function factItem(f, i){
-    var meta = f.error ? esc(f.error) : f.count + (f.kind === "cert" ? " traslados" : " cartas de porte");
+    var meta = f.error ? esc(f.error) : f.count + (f.kind === "cert" ? " traslados" : " cartas de porte") + quien(f);
     return '<li class="file' + (f.error ? " err" : "") + '"><div><div class="nm">' + esc(f.name) + '</div><div class="meta">' + meta + "</div></div>" +
       '<button class="x" type="button" data-frm="' + i + '" aria-label="Quitar ' + esc(f.name) + '"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></li>';
   }
@@ -1848,6 +1864,7 @@
   function factRender(){
     var cert = [], fac = [];
     fact.files.forEach(function(f, i){ (f.kind === "cert" ? cert : fac).push(factItem(f, i)); });
+    errFact.forEach(function(e){ (e.kind === "cert" ? cert : fac).push(errItem(e)); });
     $("#listCert").innerHTML = cert.join("") || '<li class="muted small">Todavía no cargaste el reporte de Finnegans.</li>';
     $("#listFac").innerHTML = fac.join("") || '<li class="muted small">Todavía no cargaste el detalle de la factura.</li>';
     var listo = fact.cert.length && fact.fac.length;
@@ -1918,11 +1935,8 @@
   $("#view-facturas").addEventListener("click", function(e){
     var rm = e.target.closest("[data-frm]");
     if (rm){
-      var f = fact.files[+rm.getAttribute("data-frm")]; if (!f) return;
-      fact.cert = fact.cert.filter(function(r){ return r.file !== f.name; });
-      fact.fac = fact.fac.filter(function(r){ return r.file !== f.name; });
-      fact.files.splice(+rm.getAttribute("data-frm"), 1);
-      factSave(); factRender(); toast("Quitado: " + f.name);
+      var f = fact.files[+rm.getAttribute("data-frm")];
+      if (f) borrarArchivo(f.id, f.name);
       return;
     }
     var fil = e.target.closest("[data-ffil]");
@@ -1939,10 +1953,203 @@
     }
     clearTimeout(factArm);
     b.classList.remove("armed"); b.textContent = "Vaciar control de facturas";
-    fact = {cert:[], fac:[], files:[]};
-    try { localStorage.removeItem(LSF); } catch(e){}
-    factRender(); toast("Se vació el control de facturas");
+    vaciar(["cert", "fac"], "Se vació el control de facturas");
   });
+
+  /* ---------- base compartida (Firebase) ---------- */
+  // Los datos viven en Firestore, así todos ven lo mismo:
+  //   "archivos": un documento por Excel cargado (tipo fin | buy | cert | fac, quién lo subió y cuándo);
+  //   "partes": las filas de cada Excel, de a 400 por documento.
+  // Cada navegador escucha las dos colecciones y rearma el tablero con rebuild().
+  var FB_CONFIG = {
+    apiKey:"AIzaSyDLPhL3Sb24ixBBCADfCUlNICtJfdz5o2U",
+    authDomain:"control-mermas-b902e.firebaseapp.com",
+    projectId:"control-mermas-b902e",
+    storageBucket:"control-mermas-b902e.firebasestorage.app",
+    messagingSenderId:"128727057379",
+    appId:"1:128727057379:web:827a706f94136299f9d6d6"
+  };
+  var db = null, auth = null, usuario = null;
+  var archivos = new Map(), partes = new Map(), listos = {a:false, p:false}, escuchas = [];
+  var errLocal = [], errFact = [];
+  // Campos que se guardan de cada fila (lo demás se recalcula al leer)
+  var CAMPOS = {
+    fin:["cp", "ctg", "fecha", "cliente", "emp", "prod", "origen"],
+    buy:["fecha", "cp", "ctg", "prod", "noProd", "origen", "hum", "mhAc", "finAc", "otrasDir"],
+    cert:["ctg", "cp", "fecha", "cliente", "prod", "origen", "recibida", "fin", "certif"],
+    fac:["ctg", "cp", "prod", "neto"]
+  };
+  function pick(r, keys){
+    var o = {};
+    keys.forEach(function(kk){ if (r[kk] !== undefined) o[kk] = r[kk]; });
+    return o;
+  }
+  function quien(f){
+    if (!f.por) return "";
+    var d = f.en, cuando = d ? d.getDate() + "/" + (d.getMonth() + 1) + " " + String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0") : "";
+    return '<div class="small">Subido por ' + esc(f.por.split("@")[0]) + (cuando ? " · " + cuando : "") + "</div>";
+  }
+  function errItem(e){
+    return '<li class="file err"><div><div class="nm">' + esc(e.name) + '</div><div class="meta">' + esc(e.error) + "</div></div></li>";
+  }
+  function gate(estado, extra){
+    var g = $("#gate");
+    g.hidden = !estado;
+    if (!estado) return;
+    $("#btnLogin").hidden = !(estado === "login" || (estado === "error" && auth));
+    $("#btnLogin").disabled = false;
+    $("#btnOtra").hidden = estado !== "denied";
+    $("#gateTxt").textContent = estado === "login" ? "Entrá con tu cuenta de Google para ver y cargar los datos compartidos."
+      : estado === "denied" ? "La cuenta " + (extra || "") + " no tiene permiso para usar el tablero. Pedile a Luis que la agregue, o entrá con otra cuenta."
+      : estado === "loading" ? "Conectando con la base de datos…"
+      : (extra || "No se pudo conectar con la base de datos. Revisá la conexión a internet y recargá la página.");
+  }
+  function setSync(txt, cls){
+    $("#syncState").textContent = txt;
+    $("#syncDot").className = "dot" + (cls ? " " + cls : "");
+  }
+  function fbInit(){
+    $("#gateLogo").src = document.querySelector(".appbar .logo img").src;
+    if (!window.firebase || !firebase.initializeApp){ gate("error"); return; }
+    try { firebase.initializeApp(FB_CONFIG); auth = firebase.auth(); db = firebase.firestore(); }
+    catch(e){ gate("error"); return; }
+    gate("loading");
+    auth.onAuthStateChanged(function(u){
+      usuario = u;
+      escuchas.forEach(function(f){ f(); });
+      escuchas = [];
+      archivos = new Map(); partes = new Map(); listos = {a:false, p:false};
+      if (!u){ $("#userBox").hidden = true; rebuild(); gate("login"); return; }
+      $("#userMail").textContent = u.email;
+      $("#userBox").hidden = false;
+      gate(null);
+      setSync("Conectando…", "busy");
+      render();
+      escuchas.push(db.collection("archivos").onSnapshot({includeMetadataChanges:true}, function(snap){
+        archivos = new Map();
+        snap.forEach(function(d){ archivos.set(d.id, d.data({serverTimestamps:"estimate"})); });
+        listos.a = true;
+        setSync(snap.metadata.hasPendingWrites ? "Guardando…" : "Sincronizado", snap.metadata.hasPendingWrites ? "busy" : "");
+        programar();
+      }, errorDb));
+      escuchas.push(db.collection("partes").onSnapshot(function(snap){
+        partes = new Map();
+        snap.forEach(function(d){
+          var x = d.data(); x._id = d.id;
+          if (!partes.has(x.archivoId)) partes.set(x.archivoId, []);
+          partes.get(x.archivoId).push(x);
+        });
+        listos.p = true;
+        programar();
+      }, errorDb));
+    });
+  }
+  function errorDb(e){
+    if (e && e.code === "permission-denied") gate("denied", usuario && usuario.email);
+    else { setSync("Sin conexión", "off"); toast("Error con la base de datos: " + (e && e.message ? e.message : e), 6000); }
+  }
+  var progTimer = 0;
+  function programar(){
+    if (!listos.a || !listos.p) return;
+    clearTimeout(progTimer);
+    progTimer = setTimeout(rebuild, 40);
+  }
+  // Rearma todo el estado a partir de lo que hay en la base, en el orden en que se cargaron los archivos
+  function rebuild(){
+    state.rows = []; state.pend = []; state.files = [];
+    fact = {cert:[], fac:[], files:[]};
+    Array.from(archivos.entries()).map(function(e){ return Object.assign({id:e[0]}, e[1]); })
+      .sort(function(a, b){ return (a.orden || 0) - (b.orden || 0); })
+      .forEach(function(a){
+        var ps = (partes.get(a.id) || []).slice().sort(function(x, y){ return x.idx - y.idx; });
+        if (ps.length < (a.partes || 0)) return; // las filas todavía están llegando
+        var filas = [];
+        ps.forEach(function(p){ filas = filas.concat(p.filas || []); });
+        filas.forEach(function(r){ r.file = a.nombre; });
+        var doc = {id:a.id, por:a.subidoPor || "", en:a.subidoEn && a.subidoEn.toDate ? a.subidoEn.toDate() : null};
+        var meta = a.meta || {};
+        if (a.tipo === "fin") addPend({rows:filas, certificadas:meta.certificadas || 0, emps:meta.emps || []}, a.nombre, false, doc);
+        else if (a.tipo === "buy"){
+          if (meta.grain) filas.forEach(function(r){ if (r.noProd) r.prod = meta.grain; });
+          filas.forEach(derive);
+          addRows(filas, a.nombre, meta, doc);
+        }
+        else if (a.tipo === "cert" || a.tipo === "fac") addFact(a.tipo, filas, a.nombre, doc);
+      });
+    render(); factRender();
+  }
+  function puedeEscribir(){
+    if (!db || !usuario){ toast("Entrá con tu cuenta de Google para cargar archivos."); return false; }
+    return true;
+  }
+  function opsBorrar(pred){
+    var ops = [];
+    archivos.forEach(function(a, id){
+      if (!pred(a, id)) return;
+      (partes.get(id) || []).forEach(function(p){ ops.push({del:db.collection("partes").doc(p._id)}); });
+      ops.push({del:db.collection("archivos").doc(id)});
+    });
+    return ops;
+  }
+  function commitOps(ops){
+    var tandas = [];
+    for (var i = 0; i < ops.length; i += 450) tandas.push(ops.slice(i, i + 450));
+    return tandas.reduce(function(p, t){
+      return p.then(function(){
+        var b = db.batch();
+        t.forEach(function(o){ if (o.del) b.delete(o.del); else b.set(o.set, o.data); });
+        return b.commit();
+      });
+    }, Promise.resolve());
+  }
+  // Sube los Excel leídos. Un listado nuevo de Finnegans reemplaza a los anteriores; un archivo con el mismo nombre, al anterior.
+  function subir(jobs, reemplazarFin){
+    if (!jobs.length) return Promise.resolve();
+    var ops = opsBorrar(function(a){
+      return (reemplazarFin && a.tipo === "fin") || jobs.some(function(j){ return j.tipo === a.tipo && j.nombre === a.nombre; });
+    });
+    var orden = Date.now();
+    jobs.forEach(function(j, n){
+      var ref = db.collection("archivos").doc(), keys = CAMPOS[j.tipo], trozos = [];
+      for (var i = 0; i < j.filas.length; i += 400) trozos.push(j.filas.slice(i, i + 400));
+      trozos.forEach(function(t, idx){
+        ops.push({set:db.collection("partes").doc(), data:{archivoId:ref.id, idx:idx, filas:t.map(function(r){ return pick(r, keys); })}});
+      });
+      ops.push({set:ref, data:{nombre:j.nombre, tipo:j.tipo, meta:j.meta || {}, partes:trozos.length, filas:j.filas.length,
+        subidoPor:usuario.email, subidoEn:firebase.firestore.FieldValue.serverTimestamp(), orden:orden + n}});
+    });
+    setSync("Guardando…", "busy");
+    return commitOps(ops).catch(function(e){ errorDb(e); throw e; });
+  }
+  function borrarArchivo(id, nombre){
+    if (!puedeEscribir() || !id) return;
+    commitOps(opsBorrar(function(a, aid){ return aid === id; })).then(function(){ toast("Quitado: " + nombre); }, errorDb);
+  }
+  function vaciar(tipos, msg){
+    if (!puedeEscribir()) return;
+    var ops = opsBorrar(function(a){ return tipos.indexOf(a.tipo) >= 0; });
+    if (!ops.length){ toast("No había datos para vaciar"); return; }
+    commitOps(ops).then(function(){ toast(msg); }, errorDb);
+  }
+  function entrar(){
+    if (!auth) return;
+    var p = new firebase.auth.GoogleAuthProvider();
+    p.setCustomParameters({prompt:"select_account"});
+    $("#btnLogin").disabled = true;
+    auth.signInWithPopup(p).catch(function(e){
+      $("#btnLogin").disabled = false;
+      var code = e && e.code;
+      if (code === "auth/popup-blocked" || code === "auth/operation-not-supported-in-this-environment") return auth.signInWithRedirect(p);
+      if (code === "auth/popup-closed-by-user" || code === "auth/cancelled-popup-request") return;
+      gate("error", code === "auth/unauthorized-domain"
+        ? "Falta autorizar este sitio en Firebase: Authentication → Configuración → Dominios autorizados."
+        : code === "auth/operation-not-allowed" ? "Falta activar el ingreso con Google en Firebase (Authentication → Método de acceso)."
+        : "No se pudo entrar: " + (e && e.message ? e.message : e));
+    });
+  }
+  $("#btnLogin").addEventListener("click", entrar);
+  $("#btnOtra").addEventListener("click", function(){ auth.signOut().then(entrar); });
+  $("#btnLogout").addEventListener("click", function(){ if (auth) auth.signOut(); });
 
   /* ---------- pestañas ---------- */
   var TABS = ["resumen", "cargar", "cartas", "pendientes", "facturas"], tab = "resumen";
@@ -2014,9 +2221,8 @@
   $(".load").addEventListener("change", function(e){
     var s = e.target.closest("[data-grain]"); if (!s) return;
     var f = state.files[+s.getAttribute("data-grain")]; if (!f) return;
-    f.grain = s.value;
-    state.rows.forEach(function(r){ if (r.file === f.name && r.noProd){ r.prod = s.value; derive(r); } });
-    persist(); render();
+    if (!puedeEscribir() || !f.id) return;
+    db.collection("archivos").doc(f.id).update({"meta.grain": s.value}).catch(errorDb);
   });
   // Soltado fuera de los cuadros: se reconoce solo
   window.addEventListener("dragover", function(e){ e.preventDefault(); });
@@ -2030,10 +2236,7 @@
   $(".load").addEventListener("click", function(e){
     var b = e.target.closest("[data-rm]"); if (!b) return;
     var f = state.files[+b.getAttribute("data-rm")]; if (!f) return;
-    state.rows = state.rows.filter(function(r){ return r.file !== f.name; });
-    state.pend = state.pend.filter(function(p){ return p.file !== f.name; });
-    state.files.splice(+b.getAttribute("data-rm"), 1);
-    persist(); render(); toast("Quitado: " + f.name);
+    borrarArchivo(f.id, f.name);
   });
   ["#fEstado", "#fEmp", "#fCli", "#fProd", "#fFile", "#fWarn"].forEach(function(s){ $(s).addEventListener("change", render); });
   $("#fQ").addEventListener("input", render);
@@ -2056,9 +2259,7 @@
     }
     clearTimeout(armTimer);
     b.classList.remove("armed"); b.textContent = "Vaciar todo";
-    state.rows = []; state.files = []; state.pend = [];
-    try { localStorage.removeItem(LS); } catch(e){}
-    render(); toast("Se vaciaron todos los datos");
+    vaciar(["fin", "buy"], "Se vaciaron los pendientes y las descargas");
   });
 
   // Los gráficos se redibujan al cambiar el ancho
@@ -2073,8 +2274,7 @@
   if (window.ResizeObserver) new ResizeObserver(onResize).observe($("#view-resumen"));
   else window.addEventListener("resize", onResize);
 
-  load();
-  factLoad();
+  fbInit();
   var inicial = location.hash.slice(1);
   if (TABS.indexOf(inicial) < 0){ try { inicial = localStorage.getItem(LS + ".tab") || ""; } catch(e){ inicial = ""; } }
   render();
