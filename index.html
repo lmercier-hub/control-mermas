@@ -1456,9 +1456,17 @@
       return "<th" + (c.num ? ' class="num"' : "") + (sort ? ' aria-sort="' + sort + '"' : "") + '><button type="button" data-sort="' + c.key + '">' + c.label + "</button></th>";
     }).join("");
   }
+  // La tabla de cartas solo se arma cuando está a la vista; muestra las primeras 500
+  var tablaSucia = true, verTodas = false, TOPE = 500;
+  function renderTabla(){
+    var l = filtered(false);
+    renderHead(); renderTable(l, sums(l));
+    tablaSucia = false;
+  }
   function renderTable(list, t){
-    var pend = hasPend();
-    $("#rowCount").textContent = list.length + " de " + state.rows.length;
+    var pend = hasPend(), total = list.length;
+    if (!verTodas && list.length > TOPE) list = list.slice(0, TOPE);
+    $("#rowCount").textContent = total + " de " + state.rows.length;
     if (!list.length){
       $("#tblBody").innerHTML = '<tr class="empty"><td colspan="' + cols().length + '">' +
         (state.rows.length ? "Ninguna carta de porte coincide con el filtro." : "Cargá las descargas de un comprador para empezar.") + "</td></tr>";
@@ -1478,7 +1486,8 @@
         '</td><td class="num">' + fmtKg(r.fin) +
         '</td><td class="num' + (r.otras < 0 ? " neg" : "") + '">' + fmtKg(r.otras) +
         (pend ? "</td><td>" + estadoCell(r) : "") + '</td><td><div class="pills">' + pills + "</div></td></tr>";
-    }).join("");
+    }).join("") + (total > list.length ? '<tr class="empty"><td colspan="' + cols().length + '">Se muestran las primeras ' + list.length +
+      ' cartas. <button class="linkbtn" type="button" id="btnVerTodas">Mostrar las ' + (total - list.length) + " restantes</button></td></tr>" : "");
     $("#tblFoot").innerHTML = '<tr><td colspan="4">Total · ' + t.n + ' cartas</td><td class="num">' + fmtKg(t.origen) +
       '</td><td class="num"></td><td class="num">' + fmtKg(t.mh) + '</td><td class="num">' + fmtKg(t.fin) +
       '</td><td class="num">' + fmtKg(t.otras) + "</td>" + (pend ? "<td></td>" : "") + "<td></td></tr>";
@@ -1549,7 +1558,6 @@
 
     var base = filtered(true), t = sums(base);
     lastList = base;
-    var tableList = filtered(false);
     var vacio = !state.rows.length && !state.pend.length;
     var esperando = !!usuario && !(listos.a && listos.p);
     $("#resEmpty").hidden = !vacio;
@@ -1569,7 +1577,10 @@
       return "<tr><td>" + fmtDate(p.fecha) + '</td><td class="num">' + p.n + '</td><td class="num">' + fmtKg(p.origen) +
         '</td><td class="num">' + fmtPct(pctNum(p.merma, p.origen)) + '</td><td class="num">' + fmtKg(p.fin) + "</td></tr>";
     }).join("") : '<tr class="empty"><td colspan="5">Sin datos.</td></tr>';
-    renderHead(); renderTable(tableList, sums(tableList)); renderPend(); updateExport(base.length);
+    verTodas = false;
+    tablaSucia = true;
+    if (tab === "cartas") renderTabla();
+    renderPend(); updateExport(base.length);
     renderCharts();
   }
 
@@ -2026,10 +2037,11 @@
       setSync("Conectando…", "busy");
       render();
       escuchas.push(db.collection("archivos").onSnapshot({includeMetadataChanges:true}, function(snap){
+        setSync(snap.metadata.hasPendingWrites ? "Guardando…" : "Sincronizado", snap.metadata.hasPendingWrites ? "busy" : "");
+        if (listos.a && !snap.docChanges().length) return; // solo cambió el estado de guardado, no los datos
         archivos = new Map();
         snap.forEach(function(d){ archivos.set(d.id, d.data({serverTimestamps:"estimate"})); });
         listos.a = true;
-        setSync(snap.metadata.hasPendingWrites ? "Guardando…" : "Sincronizado", snap.metadata.hasPendingWrites ? "busy" : "");
         programar();
       }, errorDb));
       escuchas.push(db.collection("partes").onSnapshot(function(snap){
@@ -2052,7 +2064,7 @@
   function programar(){
     if (!listos.a || !listos.p) return;
     clearTimeout(progTimer);
-    progTimer = setTimeout(rebuild, 40);
+    progTimer = setTimeout(rebuild, 150);
   }
   // Rearma todo el estado a partir de lo que hay en la base, en el orden en que se cargaron los archivos
   function rebuild(){
@@ -2168,6 +2180,7 @@
     try { if (location.hash.slice(1) !== name) history.replaceState(null, "", "#" + name); } catch(e){}
     if (focus) $("#tab-" + name).focus();
     if (name === "resumen") renderCharts();
+    if (name === "cartas" && tablaSucia) renderTabla();
   }
   $(".tabs").addEventListener("click", function(e){
     var b = e.target.closest("[data-tab]"); if (b) showTab(b.getAttribute("data-tab"));
@@ -2238,8 +2251,11 @@
     var f = state.files[+b.getAttribute("data-rm")]; if (!f) return;
     borrarArchivo(f.id, f.name);
   });
-  ["#fEstado", "#fEmp", "#fCli", "#fProd", "#fFile", "#fWarn"].forEach(function(s){ $(s).addEventListener("change", render); });
-  $("#fQ").addEventListener("input", render);
+  ["#fEstado", "#fEmp", "#fCli", "#fProd", "#fFile"].forEach(function(s){ $(s).addEventListener("change", render); });
+  $("#fWarn").addEventListener("change", function(){ verTodas = false; renderTabla(); });
+  var buscarTimer = 0;
+  $("#fQ").addEventListener("input", function(){ clearTimeout(buscarTimer); buscarTimer = setTimeout(function(){ verTodas = false; renderTabla(); }, 250); });
+  $("#tblBody").addEventListener("click", function(e){ if (e.target.closest("#btnVerTodas")){ verTodas = true; renderTabla(); } });
   $("#tblHead").addEventListener("click", function(e){
     var b = e.target.closest("[data-sort]"); if (!b) return;
     var key = b.getAttribute("data-sort");
