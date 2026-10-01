@@ -1979,7 +1979,7 @@
     cert:["ctg", "cp", "fecha", "cliente", "prod", "origen", "recibida", "fin", "certif"],
     fac:["ctg", "cp", "prod", "neto"]
   };
-  function pick(r, keys){
+  function soloCampos(r, keys){
     var o = {};
     keys.forEach(function(kk){ if (r[kk] !== undefined) o[kk] = r[kk]; });
     return o;
@@ -2113,7 +2113,7 @@
       var ref = db.collection("archivos").doc(), keys = CAMPOS[j.tipo], trozos = [];
       for (var i = 0; i < j.filas.length; i += 400) trozos.push(j.filas.slice(i, i + 400));
       trozos.forEach(function(t, idx){
-        ops.push({set:db.collection("partes").doc(), data:{archivoId:ref.id, idx:idx, filas:t.map(function(r){ return pick(r, keys); })}});
+        ops.push({set:db.collection("partes").doc(), data:{archivoId:ref.id, idx:idx, filas:t.map(function(r){ return soloCampos(r, keys); })}});
       });
       ops.push({set:ref, data:{nombre:j.nombre, tipo:j.tipo, meta:j.meta || {}, partes:trozos.length, filas:j.filas.length,
         subidoPor:usuario.email, subidoEn:firebase.firestore.FieldValue.serverTimestamp(), orden:orden + n}});
