@@ -194,6 +194,7 @@
   .file .nm{font-weight:600;overflow-wrap:anywhere;line-height:1.3}
   .file .meta{color:var(--muted);font-size:12px}
   .file.err .meta{color:var(--bad)}
+  .file .avisotxt{margin:4px 0 2px;padding:6px 8px;border-radius:6px;background:var(--warn-bg);color:var(--ink);font-size:12px;line-height:1.4}
   .file .grain{margin-top:6px;display:flex;align-items:center;gap:6px;color:var(--ink)}
   .file .grain select{padding:4px 8px;font-size:12px}
   .x{all:unset;cursor:pointer;flex:none;width:26px;height:26px;border-radius:6px;display:grid;place-items:center;color:var(--muted)}
@@ -1343,6 +1344,9 @@
         (f.repetidas ? " · " + f.repetidas + " ya estaban en otro listado" : "") + (f.certificadas ? " · " + f.certificadas + " ya certificadas" : "")
       : (f.fmt ? esc(f.fmt) + " · " : "") + f.count + " cartas" + (f.replaced ? " · " + f.replaced + " actualizadas" : "") +
         (f.dup ? " · " + f.dup + " también en otro archivo" : "") + (f.noCal ? " · sin hoja Calidad" : "");
+    if (f.fin && !f.error && !f.count && f.certificadas){
+      meta += '<div class="avisotxt">Son todos traslados ya certificados. Para el IMPORTCERT cargá el reporte de <b>pendientes</b> de certificar. Si es para controlar facturas, cargalo en la pestaña Control de facturas.</div>';
+    }
     if (!f.error) meta += quien(f);
     if (f.needsGrain){
       meta += '<div class="grain"><label for="grain' + i + '">Grano:</label> <select id="grain' + i + '" data-grain="' + i + '">' +
@@ -1525,6 +1529,13 @@
       return "<tr>" + pc.map(function(c){ return "<td" + (c.cls ? ' class="' + c.cls + '"' : "") + ">" + c.v(p) + "</td>"; }).join("") + "</tr>";
     }).join("") : '<tr class="empty"><td colspan="' + pc.length + '">Nada pendiente sin descarga.</td></tr>';
   }
+  // Por qué el IMPORTCERT queda vacío, para decirlo en pantalla
+  function motivoSinImport(){
+    if (!state.rows.length) return "";
+    if (hasPend() && !state.pend.length) return "IMPORTCERT vacío: el reporte de Finnegans no tiene traslados pendientes (están todos certificados).";
+    if (hasPend() && !lastList.some(function(r){ return matchOf(r); })) return "IMPORTCERT vacío: ninguna descarga del comprador coincide con los pendientes de Finnegans.";
+    return "IMPORTCERT vacío: las cartas a certificar tienen avisos. Revisalas en Cartas de porte.";
+  }
   function exportable(r){ return importable(r) && (!hasPend() || !!matchOf(r)); }
   function updateExport(n){
     var btn = $("#btnExport"), hint = $("#exportHint");
@@ -1534,9 +1545,13 @@
     btn.disabled = !downloads || !n;
     $("#btnImport").disabled = !downloads || !ni;
     $("#btnFactXls").disabled = !downloads || !factLast.length;
+    var motivo = !ni ? motivoSinImport() : "";
     if (downloadsResolved && !downloads){
       hint.hidden = false;
       hint.textContent = "La descarga no está disponible en esta vista.";
+    } else if (motivo){
+      hint.hidden = false;
+      hint.textContent = motivo;
     } else hint.hidden = true;
   }
   var lastList = [];
