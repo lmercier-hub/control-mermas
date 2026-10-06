@@ -1607,6 +1607,34 @@
     clearTimeout(toastTimer);
     toastTimer = setTimeout(function(){ el.classList.remove("show"); }, ms || 3200);
   }
+  // Algunas páginas exportan un "Excel" (.xls) que en realidad es una tabla web (HTML), por ejemplo el
+  // IMPORTCERT de La Costa Cereales. Se lee como texto para no perder el encabezado (a veces viene sin <tr>)
+  // ni dar vuelta las fechas d/m/aaaa.
+  var decoTxt = document.createElement("textarea");
+  function textoCelda(h){
+    decoTxt.innerHTML = h.replace(/<br\s*\/?>/gi, " ").replace(/<[^>]+>/g, "");
+    return decoTxt.value.replace(/\s+/g, " ").trim();
+  }
+  function leerLibro(buf){
+    var u8 = new Uint8Array(buf);
+    var inicio = new TextDecoder("latin1").decode(u8.slice(0, 1024)).toLowerCase();
+    if (/<(!doctype html|html|table|tr|td)\b/.test(inicio)){
+      var txt = new TextDecoder("utf-8").decode(u8);
+      if (txt.indexOf(String.fromCharCode(0xFFFD)) >= 0) txt = new TextDecoder("latin1").decode(u8);
+      var aoa = [];
+      txt.split(/<\/tr\s*>/i).forEach(function(tr){
+        var celdas = [], re = /<t[dh]\b[^>]*>([\s\S]*?)<\/t[dh]\s*>/gi, m;
+        while ((m = re.exec(tr))) celdas.push(textoCelda(m[1]));
+        if (celdas.some(function(c){ return c !== ""; })) aoa.push(celdas);
+      });
+      if (aoa.length){
+        var wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aoa), "Hoja1");
+        return wb;
+      }
+    }
+    return XLSX.read(u8, {type:"array"});
+  }
   // mode: "fin" = cuadro 1 (Finnegans), "buy" = cuadro 2 (comprador), "auto" = soltado fuera de los cuadros
   function handleFiles(fileList, mode){
     var files = Array.prototype.filter.call(fileList, function(f){ return /\.(xlsx|xls)$/i.test(f.name); });
@@ -1623,7 +1651,7 @@
     }
     Promise.all(files.map(function(f){
       return f.arrayBuffer().then(function(buf){
-        var wb = XLSX.read(new Uint8Array(buf), {type:"array"});
+        var wb = leerLibro(buf);
         var sheets = wb.SheetNames.map(function(sn){
           return XLSX.utils.sheet_to_json(wb.Sheets[sn], {header:1, raw:true, defval:null, blankrows:false});
         });
@@ -1832,7 +1860,7 @@
     errFact = [];
     Promise.all(files.map(function(f){
       return f.arrayBuffer().then(function(buf){
-        var wb = XLSX.read(new Uint8Array(buf), {type:"array"});
+        var wb = leerLibro(buf);
         for (var i = 0; i < wb.SheetNames.length; i++){
           var aoa = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[i]], {header:1, raw:true, defval:null, blankrows:false});
           var hc = detectCert(aoa), hf = detectFac(aoa), rows;

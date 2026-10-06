@@ -58,6 +58,7 @@ los compradores y arma el archivo IMPORTCERT para importar certificados en Finne
   - **Entregas del Sur:** C/ Porte, Hdad, Merm.
   - **ACA:** Kg.Netos, %Hum., Kg.Netos S/M. No trae grano: se le agrega una columna "Grano" o se elige en la ficha del archivo.
   - **La Costa Cereales:** ya viene en formato IMPORTCERT.
+- **Excel que en realidad son tablas web (HTML guardado como .xls):** por ejemplo el IMPORTCERT que baja La Costa Cereales. Los lee `leerLibro()` como texto, porque el lector de Excel perdía la fila de encabezado (viene sin `<tr>`) y daba vuelta las fechas d/m/aaaa.
 - **Para sumar un comprador nuevo:** agregar un perfil en `PERFILES` con `test` (reconoce el encabezado) y `cols` (dónde está cada dato). Después comparar los totales contra un cálculo aparte antes de subirlo.
 
 ## Pestaña "Control de facturas"
