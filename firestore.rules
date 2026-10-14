@@ -6,7 +6,8 @@ service cloud.firestore {
         && request.auth.token.email_verified == true
         && request.auth.token.email.lower() in [
           'lmercier@admin.com.ar',
-          'jaquerreta@admin.com.ar'
+          'jaquerreta@admin.com.ar',
+          'bpugliese@admin.com.ar'
         ];
     }
     match /{document=**} {

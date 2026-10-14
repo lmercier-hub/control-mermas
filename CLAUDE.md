@@ -76,7 +76,7 @@ Es independiente del IMPORTCERT y tiene sus propios datos (`fact`, guardados en 
 
 ## Datos compartidos (Firebase)
 - **Proyecto:** Firebase `control-mermas-b902e`, consola de Luis. La configuración web está en `FB_CONFIG` dentro de `index.html`; no es secreta.
-- **Ingreso:** con Google. Solo entran los mails que figuran en las reglas de Firestore. Hoy son `lmercier@admin.com.ar` y `jaquerreta@admin.com.ar`; copia de las reglas en `firestore.rules`.
+- **Ingreso:** con Google. Solo entran los mails que figuran en las reglas de Firestore. Hoy son `lmercier@admin.com.ar`, `jaquerreta@admin.com.ar` y `bpugliese@admin.com.ar`; copia de las reglas en `firestore.rules`.
 - **Para sumar a alguien:** agregar su mail en las reglas, en Firebase → Firestore → Reglas → Publicar, y actualizar `firestore.rules`.
 - **Colecciones:**
   - `archivos`: un documento por Excel cargado, con nombre, tipo (`fin` | `buy` | `cert` | `fac`), meta, cantidad de partes, `subidoPor`, `subidoEn` y `orden`.
