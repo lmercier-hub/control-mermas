@@ -74,12 +74,37 @@ Es independiente del IMPORTCERT y tiene sus propios datos (`fact`, guardados en 
 - **Reporte:** lista las cartas que no coinciden con CP, CTG, kg de factura, kg recibidos, diferencia, kg origen, kg finales y certificado, y se descarga en Excel.
 - **Otros formatos de detalle:** agregar el nombre de su columna de kg en `FAC.neto` (y la de CTG en `FAC.ctg` si hace falta).
 
+## Pestaña "Acondicionamiento"
+Es para los camiones que van a acondicionarse por calidad baja. Se carga la carta de porte (CPE de ARCA) y el tablero muestra cada dato listo para copiar y pegar en Finnegans: se toca el dato y queda copiado.
+- **Datos que saca:**
+  - cabecera: fecha, carta de porte (`00003-00008409`) y CTG;
+  - los 16 intervinientes de la sección A, cada uno con CUIT y razón social;
+  - grano, campaña y kg (neto, bruto y tara);
+  - procedencia y destino: N° de planta, localidad y provincia;
+  - km a recorrer y dominios.
+- **PDF de ARCA:** trae el texto adentro. Se lee con pdf.js 3.11.174 (cdnjs) y sale exacto.
+- **Foto (JPG o PNG) o PDF escaneado:** se lee con OCR (tesseract.js 5.1.1 de jsdelivr, en castellano).
+  - Después cada número se vuelve a leer recortado y agrandado con el modelo en inglés; si las dos lecturas no coinciden, el dato queda marcado en amarillo para revisar.
+  - Si bruto − tara no da el neto, se prueba con la segunda lectura y, si cierra la cuenta, se corrige solo.
+  - El CTG se toma del código QR (jsQR), que trae solo el CTG.
+  - Los CUIT se controlan con el dígito verificador.
+  - Si un CUIT ya apareció en una carta leída de PDF (o corregida a mano), se usa esa razón social.
+  - Con fotos de baja resolución el OCR confunde dígitos (4/9, 6/8). Por eso siempre se avisa que hay que comparar con la carta, y está el botón "Corregir datos".
+- **Rótulos deformados por el OCR:** los de la sección A se asignan por parecido (distancia de edición, `parecido()`), no por texto exacto.
+- **Cómo se guarda:** cada carta es un documento de `archivos` con tipo `cpe`, sin `partes`:
+  - los datos van en `meta.cpe`;
+  - también se guardan `meta.fuente` (`pdf` | `ocr`), `meta.dudosos` (lista de `{k, alt}`: el campo y la segunda lectura), `meta.avisos`, `meta.cargada` ("Ya la cargué en Finnegans") y `meta.revisada` (corregida a mano).
+  - La misma carta (mismo CTG) cargada de nuevo reemplaza a la anterior.
+  - El archivo original no se sube: la foto solo la ve quien la cargó, mientras no recargue la página.
+- **Excel:** "Descargar Excel" baja una fila por carta, con las columnas de intervinientes que tengan datos.
+- **Fechas:** en esta pestaña van completas (`07/10/2026`), como en la carta, porque se pegan en Finnegans.
+
 ## Datos compartidos (Firebase)
 - **Proyecto:** Firebase `control-mermas-b902e`, consola de Luis. La configuración web está en `FB_CONFIG` dentro de `index.html`; no es secreta.
 - **Ingreso:** con Google. Solo entran los mails que figuran en las reglas de Firestore. Hoy son `lmercier@admin.com.ar`, `jaquerreta@admin.com.ar` y `bpugliese@admin.com.ar`; copia de las reglas en `firestore.rules`.
 - **Para sumar a alguien:** agregar su mail en las reglas, en Firebase → Firestore → Reglas → Publicar, y actualizar `firestore.rules`.
 - **Colecciones:**
-  - `archivos`: un documento por Excel cargado, con nombre, tipo (`fin` | `buy` | `cert` | `fac`), meta, cantidad de partes, `subidoPor`, `subidoEn` y `orden`.
+  - `archivos`: un documento por Excel cargado, con nombre, tipo (`fin` | `buy` | `cert` | `fac`), meta, cantidad de partes, `subidoPor`, `subidoEn` y `orden`. También uno por carta de porte de acondicionamiento (tipo `cpe`, sin partes).
   - `partes`: las filas de cada Excel, de a 400, con `archivoId` e `idx`. Solo se guardan los campos de `CAMPOS`; lo demás se recalcula en `rebuild()`.
 - **Sincronización:** cada navegador escucha las dos colecciones y rearma el tablero con `rebuild()`. No se guarda nada en localStorage salvo la pestaña elegida.
 - **Al cargar archivos:**
@@ -88,7 +113,7 @@ Es independiente del IMPORTCERT y tiene sus propios datos (`fact`, guardados en 
 - **Quitar y vaciar:** quitar un archivo o "Vaciar todo" borra los documentos de la base para todos.
 
 ## Diseño
-- Franja verde AED (`--brand-deep`) con el logo Grupo Duhau embebido como webp, y cuatro pestañas: Resumen, Cargar archivos, Cartas de porte y Pendientes Finnegans.
+- Franja verde AED (`--brand-deep`) con el logo Grupo Duhau embebido como webp, y seis pestañas: Resumen, Cargar archivos, Cartas de porte, Pendientes Finnegans, Control de facturas y Acondicionamiento.
 - Colores de gráficos, validados para daltonismo:
   - claro: humedad `#2A78D6`, otras mermas `#B8860B`, kg `#1F7A37`;
   - oscuro: `#3987E5`, `#B58714`, `#3A9D52`.

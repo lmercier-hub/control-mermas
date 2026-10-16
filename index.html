@@ -253,6 +253,46 @@
   .gate-card .logo img{height:46px;width:auto}
   .gate-card p{margin:0;color:var(--muted)}
   .gate-btns{display:flex;flex-wrap:wrap;gap:8px}
+  /* acondicionamiento: cartas de porte para copiar a Finnegans */
+  .acond{display:grid;grid-template-columns:minmax(260px,340px) minmax(0,1fr);gap:18px;align-items:start}
+  @media (max-width:900px){.acond{grid-template-columns:1fr}}
+  .acond .src-files{max-height:min(60vh,560px)}
+  .cpe-prog{margin:0;padding:8px 10px;border-radius:8px;background:var(--brand-soft);font-size:12.5px}
+  .cpe-it{padding:0;align-items:stretch}
+  .cpe-it.sel{box-shadow:inset 0 0 0 2px var(--brand)}
+  .cpe-pick{all:unset;box-sizing:border-box;cursor:pointer;flex:1;min-width:0;display:grid;gap:2px;padding:8px 10px;border-radius:8px}
+  .cpe-pick:focus-visible{outline:2px solid var(--brand);outline-offset:-2px}
+  .cpe-pick .nm{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+  .cpe-it .x{align-self:center;margin-right:6px}
+  .cpe-head{padding-bottom:14px;border-bottom:1px solid var(--line)}
+  .chk{display:inline-flex;align-items:center;gap:8px;font-size:13px;cursor:pointer}
+  .chk input{width:16px;height:16px;margin:0;accent-color:var(--brand)}
+  .cpe-body{display:grid;gap:18px}
+  .cpe-avisos{margin:0;padding:10px 14px 10px 30px;border-radius:10px;background:var(--warn-bg);font-size:13px;display:grid;gap:4px}
+  .cpe-foto summary{cursor:pointer;color:var(--brand);font-weight:600;font-size:13px}
+  .cpe-foto img{display:block;margin-top:10px;max-width:100%;height:auto;border:1px solid var(--line);border-radius:8px}
+  .cpe-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+  @media (max-width:700px){.cpe-grid{grid-template-columns:1fr}}
+  .cpe-g{display:grid;gap:6px;min-width:0;align-content:start}
+  .cpe-g h3{margin:0;font:600 11px/1.25 var(--sans);text-transform:uppercase;letter-spacing:.09em;color:var(--muted)}
+  .kv{display:grid;border-top:1px solid var(--line)}
+  .kv-r{display:grid;grid-template-columns:minmax(110px,40%) minmax(0,1fr);gap:8px;align-items:center;min-height:36px;padding:3px 0;border-bottom:1px solid var(--line)}
+  .kv-k{font-size:12.5px;color:var(--muted)}
+  .kv-v{min-width:0;display:grid;justify-items:start;gap:2px}
+  .copy{all:unset;box-sizing:border-box;cursor:pointer;display:inline-flex;align-items:center;gap:8px;max-width:100%;padding:4px 8px;margin-left:-8px;border-radius:6px;font-weight:600;overflow-wrap:anywhere}
+  .copy svg{width:14px;height:14px;flex:none;color:var(--muted);opacity:.55}
+  .copy:hover,.copy.ok{background:var(--brand-soft)}
+  .copy:hover svg,.copy.ok svg{opacity:1;color:var(--brand)}
+  .copy:focus-visible{outline:2px solid var(--brand);outline-offset:1px}
+  .copy.code{font-family:var(--mono);font-size:13px}
+  .copy.dud{margin-left:0;background:var(--warn-bg);box-shadow:inset 0 0 0 1px var(--warn)}
+  .dudnote{font-size:11.5px;color:var(--warn)}
+  .cpe-roles td{white-space:normal}
+  .cpe-roles td:first-child{color:var(--muted);font-size:12.5px;white-space:nowrap}
+  .cpe-roles td:nth-child(2){white-space:nowrap}
+  .cpe-vacios{margin:4px 0 0}
+  .ed{font:500 13px/1.2 var(--sans);padding:6px 8px;border:1px solid var(--line-strong);border-radius:6px;background:var(--surface);color:var(--ink);width:100%;min-width:0}
+  .ed:focus{outline:2px solid var(--brand);outline-offset:0;border-color:var(--brand)}
   @media (prefers-reduced-motion: reduce){*{transition:none!important}}
 </style>
 <style>body{margin:0}</style>
@@ -300,6 +340,10 @@
     <button class="tab" role="tab" id="tab-facturas" aria-controls="view-facturas" aria-selected="false" data-tab="facturas" tabindex="-1">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3h14v18l-3-2-2 2-2-2-2 2-2-2-3 2z"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>
       Control de facturas <span class="badge" id="bdgFact"></span>
+    </button>
+    <button class="tab" role="tab" id="tab-acond" aria-controls="view-acond" aria-selected="false" data-tab="acond" tabindex="-1">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 17V6H2v11h2"/><path d="M14 9h4l4 4v4h-2"/><path d="M8 17h8"/><circle cx="6" cy="17.5" r="2"/><circle cx="18" cy="17.5" r="2"/></svg>
+      Acondicionamiento <span class="badge" id="bdgAcond"></span>
     </button>
   </div>
 </nav>
@@ -544,9 +588,34 @@
 
     <div class="load-actions"><span></span><button class="btn" id="btnFactClear" type="button">Vaciar control de facturas</button></div>
   </section>
+  <!-- ACONDICIONAMIENTO -->
+  <section class="view" id="view-acond" role="tabpanel" aria-labelledby="tab-acond" hidden>
+    <p class="intro">Para los camiones que van a acondicionarse por calidad baja. Cargá la carta de porte en PDF (la que baja de ARCA) o en foto: el tablero la lee y te deja cada dato listo para pegar en Finnegans. Tocá un dato para copiarlo.</p>
+    <div class="acond">
+      <div class="src-box">
+        <div class="src-head"><div><h2>Cartas de porte</h2><p>PDF de ARCA o foto (JPG o PNG). Podés cargar varias juntas.</p></div></div>
+        <label class="drop" data-cmode="cpe" for="fileCpe">
+          <input type="file" id="fileCpe" multiple accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/></svg>
+          <strong>Arrastrá o elegí la carta de porte</strong>
+          <span>.pdf, .jpg o .png</span>
+        </label>
+        <p class="cpe-prog" id="cpeProg" role="status" hidden></p>
+        <ul class="src-files" id="listCpe"></ul>
+        <div class="load-actions">
+          <button class="btn" type="button" id="btnCpeXls" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+            Descargar Excel
+          </button>
+          <button class="btn" id="btnCpeClear" type="button">Vaciar</button>
+        </div>
+      </div>
+      <section class="card" id="cpeDet"></section>
+    </div>
+  </section>
 </main>
 
-<p class="foot">Los archivos se procesan en esta computadora y no se suben a ningún lado. Merma de humedad según la tabla “% de humedad” vigente (con manipuleo).</p>
+<p class="foot">Los archivos se leen en esta computadora; en la base compartida se guardan solo los datos que usa el tablero. Merma de humedad según la tabla “% de humedad” vigente (con manipuleo).</p>
 
 <div class="tip" id="tip" role="status" hidden></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
@@ -2010,9 +2079,671 @@
     vaciar(["cert", "fac"], "Se vació el control de facturas");
   });
 
+  /* ---------- lectura de cartas de porte (PDF o foto) ---------- */
+  // El PDF de ARCA trae el texto adentro y se lee directo con pdf.js: sale exacto.
+  // Una foto o un PDF escaneado se lee con OCR (Tesseract) y después cada número se vuelve a leer
+  // agrandado: si las dos lecturas no coinciden, el dato queda marcado para revisar.
+  // Las dos cosas terminan en palabras con posición, que se arman en renglones y se leen por los rótulos.
+  var LIBS = {
+    pdf:"https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js",
+    pdfWorker:"https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js",
+    ocr:"https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js",
+    qr:"https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"
+  };
+  var cargados = {};
+  function cargarScript(src){
+    if (!cargados[src]) cargados[src] = new Promise(function(ok, mal){
+      var s = document.createElement("script");
+      s.src = src; s.onload = ok;
+      s.onerror = function(){ delete cargados[src]; mal(new Error("no se pudo bajar el lector (revisá la conexión)")); };
+      document.head.appendChild(s);
+    });
+    return cargados[src];
+  }
+  function pdfLib(){
+    return cargarScript(LIBS.pdf).then(function(){
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc = LIBS.pdfWorker;
+      return window.pdfjsLib;
+    });
+  }
+  // Dos lectores: castellano para la hoja entera y otro (inglés) para releer los números recortados,
+  // que en las pruebas confundió menos los dígitos y además se equivoca distinto.
+  var lectores = {}, ocrAvance = null;
+  function lector(idioma, avance){
+    if (avance !== undefined) ocrAvance = avance;
+    if (!lectores[idioma]) lectores[idioma] = cargarScript(LIBS.ocr).then(function(){
+      return Tesseract.createWorker(idioma, 1, {logger:function(m){
+        // El avance de las relecturas lo informa verificar(), no cada recorte
+        if (ocrAvance && !(idioma === "eng" && m.status === "recognizing text")) ocrAvance(m);
+      }});
+    }).catch(function(e){ delete lectores[idioma]; throw e; });
+    return lectores[idioma];
+  }
+  function ocr(avance){ return lector("spa", avance); }
+
+  // Palabras: {t, x, y (centro), h, b: caja en el lienzo}, con y de arriba hacia abajo
+  function palabrasPdf(page){
+    var vp = page.getViewport({scale:1});
+    return page.getTextContent().then(function(tc){
+      return tc.items.filter(function(it){ return it.str && it.str.trim(); }).map(function(it){
+        var h = it.height || Math.abs(it.transform[3]) || 8;
+        return {t:it.str, x:it.transform[4], y:vp.height - it.transform[5] - h / 2, h:h};
+      });
+    });
+  }
+  function palabrasOcr(c, avance){
+    return ocr(avance).then(function(w){
+      return w.setParameters({tessedit_pageseg_mode:"6", tessedit_char_whitelist:""}).then(function(){ return w.recognize(c); });
+    }).then(function(r){
+      return (r.data.words || []).filter(function(w){ return w.text && w.text.trim(); }).map(function(w){
+        var b = w.bbox;
+        return {t:w.text, x:b.x0, y:(b.y0 + b.y1) / 2, h:b.y1 - b.y0, b:b};
+      });
+    });
+  }
+  // La foto se agranda para que el OCR lea mejor la letra chica
+  function lienzo(fuente, ancho, alto){
+    var k = Math.min(3, Math.max(1, 2400 / ancho)), c = document.createElement("canvas");
+    c.width = Math.round(ancho * k); c.height = Math.round(alto * k);
+    var g = c.getContext("2d");
+    g.fillStyle = "#fff"; g.fillRect(0, 0, c.width, c.height);
+    g.imageSmoothingQuality = "high";
+    g.drawImage(fuente, 0, 0, c.width, c.height);
+    return c;
+  }
+  function imagenDe(file){
+    return new Promise(function(ok, mal){
+      var url = URL.createObjectURL(file), img = new Image();
+      img.onload = function(){ ok({img:img, url:url}); };
+      img.onerror = function(){ URL.revokeObjectURL(url); mal(new Error("no se pudo abrir la imagen")); };
+      img.src = url;
+    });
+  }
+  // El QR de la carta de porte trae el CTG: sirve para confirmar el que leyó el OCR
+  function ctgDelQr(c){
+    return cargarScript(LIBS.qr).then(function(){
+      var g = c.getContext("2d"), d = g.getImageData(0, 0, c.width, c.height), r = window.jsQR(d.data, c.width, c.height);
+      var m = r && String(r.data).match(/\b(10\d{9})\b/);
+      return m ? m[1] : "";
+    }).catch(function(){ return ""; });
+  }
+
+  // Lee un archivo (PDF, JPG o PNG). Devuelve {datos, avisos, dudosos, fuente, imagen}
+  function leerCpe(file, conocidos, avance){
+    var esPdf = /\.pdf$/i.test(file.name) || file.type === "application/pdf";
+    if (esPdf){
+      return Promise.all([pdfLib(), file.arrayBuffer()]).then(function(x){
+        return x[0].getDocument({data:x[1]}).promise;
+      }).then(function(doc){ return doc.getPage(1); }).then(function(page){
+        return palabrasPdf(page).then(function(ws){
+          if (ws.map(function(w){ return w.t; }).join("").length > 200){
+            var r = leerCartaPorte(renglones(ws), file.name);
+            r.fuente = "pdf"; r.dudosos = {};
+            return cerrar(r);
+          }
+          // PDF escaneado: se dibuja la página y se lee como una foto
+          var vp = page.getViewport({scale:3}), c = document.createElement("canvas");
+          c.width = vp.width; c.height = vp.height;
+          // intent "print": dibuja de una vez, sin esperar cuadros de animación (que no llegan si la pestaña está oculta)
+          return page.render({canvasContext:c.getContext("2d"), viewport:vp, intent:"print"}).promise.then(function(){
+            return leerFoto(c, {img:c, k:1}, file.name, conocidos, avance, null);
+          });
+        });
+      });
+    }
+    return imagenDe(file).then(function(o){
+      var c = lienzo(o.img, o.img.naturalWidth, o.img.naturalHeight);
+      return leerFoto(c, {img:o.img, k:o.img.naturalWidth / c.width}, file.name, conocidos, avance, o.url);
+    });
+  }
+  // c: lienzo agrandado que lee el OCR; orig: la imagen original y la escala para pasar del lienzo a ella
+  function leerFoto(c, orig, nombre, conocidos, avance, url){
+    var res;
+    return palabrasOcr(c, avance).then(function(ws){
+      res = leerCartaPorte(renglones(ws), nombre);
+      res.fuente = "ocr";
+      return verificar(orig, res, avance);
+    }).then(function(){
+      return ctgDelQr(c);
+    }).then(function(qr){
+      var d = res.datos;
+      if (qr){
+        res.notas = res.notas.filter(function(a){ return !/CTG/.test(a); });
+        if (qr !== d.ctg) d.ctg = qr;
+        delete res.dudosos.ctg;
+      }
+      // Razón social: si el CUIT ya apareció en una carta leída de PDF, se usa ese nombre
+      ROLES.forEach(function(r){
+        var x = d.roles[r.k];
+        if (x && x.cuit && conocidos && conocidos[x.cuit]) x.nombre = conocidos[x.cuit];
+      });
+      if (url) res.imagen = url;
+      else return new Promise(function(ok){ c.toBlob(function(b){ res.imagen = b ? URL.createObjectURL(b) : ""; ok(); }, "image/jpeg", 0.85); });
+    }).then(function(){ return cerrar(res); });
+  }
+  function cerrar(res){
+    res.avisos = res.notas.concat(chequeos(res.datos));
+    delete res.notas; delete res.prov;
+    return res;
+  }
+
+  // Segunda lectura de cada número, recortado y agrandado, solo con los caracteres que puede tener
+  var VERIF = {
+    fecha:"0123456789/", cpe:"0123456789-", campana:"0123456789", bruto:"0123456789", tara:"0123456789", neto:"0123456789",
+    "proc.planta":"0123456789", "dest.planta":"0123456789", km:"0123456789", dominios:"ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 -"
+  };
+  function valorDe(d, k){ var p = k.split("."); return p.length > 1 ? (d[p[0]] || {})[p[1]] || "" : d[k] || ""; }
+  function releer(orig, ws, lista){
+    var x0 = Infinity, y0 = Infinity, x1 = 0, y1 = 0, f = orig.k;
+    ws.forEach(function(w){ x0 = Math.min(x0, w.b.x0 * f); y0 = Math.min(y0, w.b.y0 * f); x1 = Math.max(x1, w.b.x1 * f); y1 = Math.max(y1, w.b.y1 * f); });
+    // Se recorta de la imagen original, con un margen, y se agranda a unos 28 px de alto
+    var alto = Math.max(1, y1 - y0), pad = alto * 0.45, k = Math.max(1, 28 / alto), r = document.createElement("canvas");
+    var W = orig.img.naturalWidth || orig.img.width, H = orig.img.naturalHeight || orig.img.height;
+    x0 = Math.max(0, x0 - pad); y0 = Math.max(0, y0 - pad); x1 = Math.min(W, x1 + pad); y1 = Math.min(H, y1 + pad);
+    r.width = Math.round((x1 - x0) * k); r.height = Math.round((y1 - y0) * k);
+    var g = r.getContext("2d");
+    g.fillStyle = "#fff"; g.fillRect(0, 0, r.width, r.height);
+    g.imageSmoothingQuality = "high";
+    g.drawImage(orig.img, x0, y0, x1 - x0, y1 - y0, 0, 0, r.width, r.height);
+    return lector("eng").then(function(w){
+      return w.setParameters({tessedit_pageseg_mode:"7", tessedit_char_whitelist:lista}).then(function(){ return w.recognize(r); });
+    }).then(function(o){ return o.data.text.replace(/\s+/g, " ").trim(); });
+  }
+  function verificar(orig, res, avance){
+    var d = res.datos, prov = res.prov, alt = {};
+    res.dudosos = {};
+    var campos = Object.keys(VERIF).filter(function(k){ return valorDe(d, k) && prov[k] && prov[k].length; });
+    ROLES.forEach(function(r){
+      var x = d.roles[r.k];
+      if (x && x.cuit && !cuitValido(x.cuit) && prov["roles." + r.k]) campos.push("roles." + r.k);
+    });
+    var hecho = 0;
+    return campos.reduce(function(p, k){
+      return p.then(function(){
+        if (avance) avance({status:"verificando", progress:hecho++ / campos.length});
+        var cuit = k.indexOf("roles.") === 0;
+        return releer(orig, prov[k], cuit ? "0123456789" : VERIF[k]).then(function(t){ alt[k] = t; });
+      });
+    }, Promise.resolve()).then(function(){
+      Object.keys(alt).forEach(function(k){
+        var a = alt[k];
+        if (k.indexOf("roles.") === 0){
+          var x = d.roles[k.slice(6)], cu = a.replace(/\D/g, "");
+          if (cuitValido(cu)) x.cuit = cu;
+          return;
+        }
+        var v = valorDe(d, k);
+        if (k === "fecha") a = fechaDe(a);
+        if (k === "dominios") a = a.replace(/\s*-\s*/g, " - ");
+        if (a && a !== v) res.dudosos[k] = a;
+      });
+      // Bruto − tara = neto: si con la segunda lectura cierra la cuenta, se corrige solo
+      var ks = ["bruto", "tara", "neto"], opc = ks.map(function(k){
+        var o = [d[k]];
+        if (res.dudosos[k] && /^\d{3,6}$/.test(res.dudosos[k])) o.push(res.dudosos[k]);
+        return o;
+      });
+      var mejor = null;
+      opc[0].forEach(function(b, i){ opc[1].forEach(function(t, j){ opc[2].forEach(function(n, l){
+        if (b && t && n && +b - +t === +n && (!mejor || i + j + l < mejor.c)) mejor = {v:[b, t, n], c:i + j + l};
+      }); }); });
+      if (mejor) ks.forEach(function(k, i){ d[k] = mejor.v[i]; delete res.dudosos[k]; });
+    });
+  }
+
+  // Junta las palabras en renglones (misma altura) y las ordena de izquierda a derecha
+  function renglones(ws){
+    ws = ws.map(function(w){ w.t = w.t.replace(/\s+/g, " ").replace(/[º˚]/g, "°").trim(); return w; }).filter(function(w){ return w.t; });
+    if (!ws.length) return [];
+    var hs = ws.map(function(w){ return w.h; }).sort(function(a, b){ return a - b; });
+    var tol = hs[Math.floor(hs.length / 2)] * 0.5, out = [], cur = null;
+    ws.slice().sort(function(a, b){ return a.y - b.y; }).forEach(function(w){
+      if (cur && Math.abs(w.y - cur.y) <= tol){ cur.ws.push(w); cur.y += (w.y - cur.y) / cur.ws.length; }
+      else { cur = {y:w.y, ws:[w]}; out.push(cur); }
+    });
+    out.forEach(function(l){
+      l.ws.sort(function(a, b){ return a.x - b.x; });
+      l.t = l.ws.map(function(w){ return w.t; }).join(" ");
+    });
+    return out;
+  }
+  // Texto de varios renglones y, para cada letra, la palabra de la que viene
+  function juntar(lines){
+    var s = "", own = [];
+    lines.forEach(function(l, li){
+      if (li){ s += "\n"; own.push(null); }
+      l.ws.forEach(function(w, wi){
+        if (wi){ s += " "; own.push(null); }
+        s += w.t;
+        for (var k = 0; k < w.t.length; k++) own.push(w);
+      });
+    });
+    return {s:s, own:own};
+  }
+  function palabrasEntre(j, a, b){
+    var out = [];
+    for (var i = a; i < b; i++) if (j.own[i] && out.indexOf(j.own[i]) < 0) out.push(j.own[i]);
+    return out;
+  }
+
+  // En los números que lee el OCR, letras parecidas a dígitos
+  function digitos(s){ return String(s || "").replace(/[OoD]/g, "0").replace(/[Il|]/g, "1").replace(/S/g, "5").replace(/B/g, "8").replace(/\s/g, ""); }
+  // "03/092026" (el OCR se comió una barra) → "03/09/2026"; si no es una fecha posible, vacío
+  function fechaDe(s){
+    var m = String(s || "").match(/(\d{1,2})\s*\/?\s*(\d{2})\s*\/?\s*(20\d{2})/);
+    if (!m || +m[1] < 1 || +m[1] > 31 || +m[2] < 1 || +m[2] > 12) return "";
+    return m[1].padStart(2, "0") + "/" + m[2] + "/" + m[3];
+  }
+  function cuitValido(c){
+    if (!/^\d{11}$/.test(c)) return false;
+    var p = [5, 4, 3, 2, 7, 6, 5, 4, 3, 2], s = 0;
+    for (var i = 0; i < 10; i++) s += +c[i] * p[i];
+    var v = 11 - s % 11;
+    if (v === 11) v = 0;
+    return v !== 10 && v === +c[10];
+  }
+
+  // Intervinientes, en el orden de la carta de porte
+  var ROLES = [
+    {k:"titular", txt:"Titular carta de porte"},
+    {k:"rteProd", txt:"Remitente comercial productor"},
+    {k:"rteVP", txt:"Rte. comercial venta primaria"},
+    {k:"rteVS", txt:"Rte. comercial venta secundaria"},
+    {k:"rteVS2", txt:"Rte. comercial venta secundaria 2"},
+    {k:"mat", txt:"Mercado a término"},
+    {k:"corVP", txt:"Corredor venta primaria"},
+    {k:"corVS", txt:"Corredor venta secundaria"},
+    {k:"entregador", txt:"Representante entregador"},
+    {k:"recibidor", txt:"Representante recibidor"},
+    {k:"destinatario", txt:"Destinatario"},
+    {k:"destino", txt:"Destino"},
+    {k:"transportista", txt:"Empresa transportista"},
+    {k:"flete", txt:"Flete pagador"},
+    {k:"chofer", txt:"Chofer"},
+    {k:"intermediario", txt:"Intermediario de flete"}
+  ];
+  function normRotulo(s){ return String(s).toLowerCase().normalize("NFD").replace(/[^a-z0-9]/g, ""); }
+  ROLES.forEach(function(r){ r.norm = normRotulo(r.txt); });
+  // Parecido entre dos textos (1 = iguales), con la distancia de edición
+  function parecido(a, b){
+    var m = a.length, n = b.length, prev = [], cur, i, j;
+    for (j = 0; j <= n; j++) prev[j] = j;
+    for (i = 1; i <= m; i++){
+      cur = [i];
+      for (j = 1; j <= n; j++) cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+      prev = cur;
+    }
+    return 1 - prev[n] / Math.max(m, n, 1);
+  }
+  // "30654257562 - ECONOMART S R L" → {cuit, nombre}
+  function interviniente(v){
+    v = v.replace(/^[\s:;.,]+/, "").trim();
+    if (!v || /^[-–—]$/.test(v)) return null;
+    var m = v.match(/^([0-9OoIlDSB| ]{10,16}?)\s*[-–—]\s*(.*)$/);
+    if (m){
+      var c = digitos(m[1]);
+      if (/^\d{11}$/.test(c)) return {cuit:c, nombre:m[2].trim()};
+    }
+    return {cuit:"", nombre:v};
+  }
+
+  function leerCartaPorte(ls, nombreArchivo){
+    var d = {roles:{}}, notas = [], prov = {};
+    var cab = {A:/INTERVINIENTES/, B:/GRANO\s*\W?\s*ESPECIE|\bB\s*[-–]\s*GRANO/, C:/PROCEDENCIA/, D:/DESTINO\s+DE\s+LA\s+MERCADER/,
+      E:/DATOS\s+DEL\s+TRANSPORTE/, F:/CONTINGENCIAS/, G:/\bDESCARGA\b/};
+    var pos = {};
+    ls.forEach(function(l, i){ Object.keys(cab).forEach(function(k){ if (pos[k] == null && cab[k].test(l.t)) pos[k] = i; }); });
+    var orden = Object.keys(pos).sort(function(a, b){ return pos[a] - pos[b]; });
+    // Renglones de una sección; si no se encontró el título, todo el documento
+    function sec(k){
+      if (pos[k] == null) return ls;
+      var i = orden.indexOf(k), fin = i + 1 < orden.length ? pos[orden[i + 1]] : ls.length;
+      return ls.slice(pos[k] + 1, fin);
+    }
+    // Busca y recuerda de qué palabras salió el dato (para la segunda lectura)
+    function busca(re, lines, campo){
+      var j = juntar(lines), m = new RegExp(re.source, re.flags.replace("d", "") + "d").exec(j.s);
+      if (!m) return "";
+      if (campo) prov[campo] = palabrasEntre(j, m.indices[1][0], m.indices[1][1]);
+      return m[1].trim();
+    }
+    var cabecera = pos.A != null ? ls.slice(0, pos.A) : ls.slice(0, 8);
+
+    // Cabecera
+    d.fecha = fechaDe(busca(/Fecha\s*:?\s*(\d{1,2}\s*\/?\s*\d{2}\s*\/?\s*\d{4})/i, cabecera, "fecha"));
+    var cp = busca(/([0-9OoIlD]{5}\s*[-–]\s*[0-9OoIlD]{8})(?!\d)/, cabecera, "cpe").replace(/\s/g, "").split(/[-–]/);
+    d.cpe = cp.length === 2 ? digitos(cp[0]) + "-" + digitos(cp[1]) : "";
+    d.ctg = digitos(busca(/CTG\s*:?\s*([0-9OoIl ]{11,13})/i, cabecera, "ctg")).slice(0, 11);
+    var ctgNombre = (String(nombreArchivo || "").match(/(?:^|\D)(10\d{9})(?:\D|$)/) || [])[1] || "";
+    if (!/^\d{11}$/.test(d.ctg) && ctgNombre){ d.ctg = ctgNombre; notas.push("El CTG se tomó del nombre del archivo"); }
+    else if (ctgNombre && ctgNombre !== d.ctg) notas.push("El nombre del archivo dice CTG " + ctgNombre + " y la carta " + d.ctg + ": revisalo");
+
+    // A - Intervinientes. El OCR deforma los rótulos ("Carredar Yenla Primaria"), así que cada renglón
+    // se asigna al rótulo más parecido, sin repetir.
+    var pares = [], filas = sec("A");
+    filas.forEach(function(l, li){
+      var corte = l.t.indexOf(":"), m = l.t.match(/[0-9OoIl|SB]{8,}/);
+      if (corte < 0 || (m && m.index < corte)) corte = m ? m.index : l.t.length;
+      var rot = normRotulo(l.t.slice(0, corte));
+      if (rot.length < 4) return;
+      ROLES.forEach(function(r){ pares.push({li:li, k:r.k, sim:parecido(rot, r.norm), corte:corte}); });
+    });
+    var usado = {};
+    pares.sort(function(a, b){ return b.sim - a.sim; }).forEach(function(p){
+      if (p.sim < 0.5 || usado[p.li] || p.k in d.roles) return;
+      usado[p.li] = true;
+      var l = filas[p.li], j = juntar([l]);
+      d.roles[p.k] = interviniente(l.t.slice(p.corte));
+      // Palabras del CUIT, para releerlo si no da el dígito verificador
+      prov["roles." + p.k] = palabrasEntre(j, p.corte, j.s.length).filter(function(w){ return /^[:;.\s]*[0-9OoIlDSB|]{4,}$/.test(w.t); }).slice(0, 3);
+    });
+    ROLES.forEach(function(r){ if (d.roles[r.k] === undefined) d.roles[r.k] = null; });
+
+    // B - Grano / especie
+    var b = sec("B");
+    d.grano = busca(/Grano\s*\W?\s*(?:especie\s*:?)?\s*(.*?)\s+Tipo\b/i, b) || busca(/Tipo\s*:?\s*([A-Za-zÁÉÍÓÚáéíóúÑñ ]+?)\s+Campa/i, b);
+    // El OCR a veces pierde el acento: "Maiz" → "Maíz"
+    d.grano = {maiz:"Maíz", mani:"Maní"}[normRotulo(d.grano)] || d.grano;
+    d.campana = digitos(busca(/Campa.a\s*:?\s*([0-9OoIl]{4})/i, b, "campana"));
+    d.bruto = digitos(busca(/Peso\s+Bruto\s*(?:\(kg\))?\s*:?\s*\W?\s*([0-9OoIl]{3,6})(?!\d)/i, b, "bruto"));
+    d.tara = digitos(busca(/Peso\s+Tara\s*(?:\(kg\))?\s*:?\s*\W?\s*([0-9OoIl]{3,6})(?!\d)/i, b, "tara"));
+    d.neto = digitos(busca(/Peso\s+Neto\s*(?:\(kg\))?\s*:?\s*\W?\s*([0-9OoIl]{3,6})(?!\d)/i, b, "neto"));
+    d.obs = busca(/Observaciones\s*:?\s*(.*)/i, b);
+
+    // C - Procedencia y D - Destino de la mercadería
+    function lugar(lines, k){
+      return {
+        planta:digitos(busca(/Pla.?.?a\s*:?\s*\W?\s*([0-9OoIl]{3,})/i, lines, k + ".planta")),
+        localidad:busca(/Localidad\s*:?\s*\W?\s*(.*?)\s+Provincia/i, lines) || busca(/Localidad\s*:?\s*(.*)/i, lines),
+        provincia:busca(/Provincia\s*:?\s*(.*)/i, lines),
+        direccion:busca(/Direcci.n\s*:?\s*(.*)/i, lines)
+      };
+    }
+    d.proc = lugar(pos.C != null ? sec("C") : [], "proc");
+    d.dest = lugar(pos.D != null ? sec("D") : [], "dest");
+
+    // E - Transporte
+    var e = sec("E");
+    d.km = digitos(busca(/Kms?\s*[.,]?\s*a\s*recorrer\s*:?\s*([0-9OoIl]+)/i, e, "km"));
+    d.dominios = busca(/Dominios\s*:?\s*(.*)/i, e, "dominios");
+    d.partida = fechaDe(busca(/Pa.?.?ida\s*:?\s*(\d{1,2}\s*\/?\s*\d{2}\s*\/?\s*\d{4})/i, e));
+
+    return {datos:d, notas:notas, prov:prov};
+  }
+
+  /* ---------- pestaña Acondicionamiento ---------- */
+  // Cada carta de porte leída es un documento de "archivos" con tipo "cpe" y los datos en meta.cpe
+  // (no tiene "partes"). El archivo original no se sube: la foto solo queda a la vista de quien la cargó.
+  var cpes = [], cpeSel = null, cpeVisto = null, cpeEditando = false, errCpe = [], imagenes = {};
+  var CPE_GRUPOS = [
+    {t:"Carta de porte", f:[["fecha", "Fecha"], ["cpe", "Carta de porte", 1], ["ctg", "CTG", 1]]},
+    {t:"Grano", f:[["grano", "Grano / especie"], ["campana", "Campaña", 1], ["neto", "Peso neto (kg)", 1], ["bruto", "Peso bruto (kg)", 1], ["tara", "Peso tara (kg)", 1]]},
+    {t:"Procedencia", f:[["proc.planta", "N° de planta", 1], ["proc.localidad", "Localidad"], ["proc.provincia", "Provincia"]]},
+    {t:"Destino de la mercadería", f:[["dest.planta", "N° de planta", 1], ["dest.localidad", "Localidad"], ["dest.provincia", "Provincia"]]},
+    {t:"Transporte", f:[["km", "Km a recorrer", 1], ["dominios", "Dominios", 1]]}
+  ];
+  var CPE_NOMBRES = {fecha:"fecha", cpe:"carta de porte", ctg:"CTG", campana:"campaña", bruto:"peso bruto", tara:"peso tara", neto:"peso neto",
+    "proc.planta":"planta de procedencia", "dest.planta":"planta de destino", km:"km a recorrer", dominios:"dominios"};
+  var ICO_COPIA = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>';
+
+  // Avisos que se pueden recalcular siempre (al leer y al corregir a mano)
+  function chequeos(d){
+    var av = [], faltan = [];
+    if (!d.cpe) faltan.push("carta de porte");
+    if (!d.ctg) faltan.push("CTG");
+    if (!d.fecha) faltan.push("fecha");
+    if (!d.grano) faltan.push("grano");
+    if (!d.neto) faltan.push("peso neto");
+    if (!d.roles || !d.roles.titular) faltan.push("titular");
+    if (faltan.length) av.push("No encontré: " + faltan.join(", "));
+    ROLES.forEach(function(r){
+      var x = d.roles && d.roles[r.k];
+      if (x && x.cuit && !cuitValido(x.cuit)) av.push("El CUIT de " + r.txt.toLowerCase() + " no da bien el dígito verificador: revisalo");
+    });
+    if (d.bruto && d.tara && d.neto && +d.bruto - +d.tara !== +d.neto) av.push("Bruto − tara no da el neto: revisá los kg");
+    return av;
+  }
+  // Razón social de cada CUIT según las cartas leídas de PDF o corregidas a mano
+  function conocidos(){
+    var o = {};
+    cpes.forEach(function(c){
+      if (c.m.fuente !== "pdf" && !c.m.revisada) return;
+      var r = (c.m.cpe || {}).roles || {};
+      Object.keys(r).forEach(function(k){ if (r[k] && r[k].cuit && r[k].nombre) o[r[k].cuit] = r[k].nombre; });
+    });
+    return o;
+  }
+  // Los datos dudosos se guardan como lista [{k:"proc.planta", alt:"512412"}] porque la base no acepta bien claves con punto
+  function dudososDe(m){
+    var o = {};
+    (Array.isArray(m.dudosos) ? m.dudosos : []).forEach(function(x){ o[x.k] = x.alt; });
+    return o;
+  }
+  function setProg(txt){ var p = $("#cpeProg"); p.hidden = !txt; p.textContent = txt || ""; }
+  function handleCpe(fileList){
+    var files = Array.prototype.filter.call(fileList, function(f){ return /\.(pdf|jpe?g|png)$/i.test(f.name) || /^image\/|pdf$/.test(f.type); });
+    if (!files.length){ toast("Elegí la carta de porte en PDF, JPG o PNG"); return; }
+    if (!puedeEscribir()) return;
+    errCpe = [];
+    var ok = 0, dic = conocidos();
+    files.reduce(function(p, f, i){
+      return p.then(function(){
+        var pre = files.length > 1 ? "Carta " + (i + 1) + " de " + files.length + " · " : "";
+        setProg(pre + "Leyendo " + f.name + "…");
+        return leerCpe(f, dic, function(m){
+          var pct = m.progress ? " " + Math.round(m.progress * 100) + "%" : "";
+          setProg(pre + (m.status === "recognizing text" ? "Leyendo la imagen" + pct
+            : m.status === "verificando" ? "Releyendo los números" + pct
+            : "Preparando el lector de imágenes (la primera vez tarda un poco)…"));
+        }).then(function(res){
+          var d = res.datos;
+          if (!d.ctg && !d.cpe && !d.roles.titular) throw new Error("no parece una carta de porte");
+          // Los nombres de un PDF de esta misma tanda ya sirven para las fotos que siguen
+          if (res.fuente === "pdf") ROLES.forEach(function(r){ var x = res.datos.roles[r.k]; if (x && x.cuit && x.nombre) dic[x.cuit] = x.nombre; });
+          return guardarCpe(res, f.name);
+        }).then(function(){ ok++; }, function(e){
+          errCpe.push({name:f.name, error:"No se pudo leer: " + (e && e.message ? e.message : "formato desconocido")});
+        });
+      });
+    }, Promise.resolve()).then(function(){
+      setProg("");
+      acondRender();
+      toast(ok ? (ok === 1 ? "Carta de porte leída y guardada" : ok + " cartas de porte leídas y guardadas") + (errCpe.length ? " · " + errCpe.length + " con error" : "")
+        : "No se pudo leer ninguna carta de porte", 4000);
+    });
+  }
+  function guardarCpe(res, nombre){
+    var d = res.datos, ref = db.collection("archivos").doc();
+    // La misma carta (mismo CTG) cargada de nuevo reemplaza a la anterior
+    var ops = opsBorrar(function(a){ return a.tipo === "cpe" && ((d.ctg && a.meta && a.meta.cpe && a.meta.cpe.ctg === d.ctg) || a.nombre === nombre); });
+    ops.push({set:ref, data:{nombre:nombre, tipo:"cpe", partes:0, filas:1, orden:Date.now(),
+      meta:{cpe:d, fuente:res.fuente, avisos:res.avisos || [], dudosos:Object.keys(res.dudosos || {}).map(function(k){ return {k:k, alt:res.dudosos[k]}; }), cargada:false},
+      subidoPor:usuario.email, subidoEn:firebase.firestore.FieldValue.serverTimestamp()}});
+    if (res.imagen) imagenes[ref.id] = res.imagen;
+    cpeSel = ref.id; cpeEditando = false;
+    setSync("Guardando…", "busy");
+    return commitOps(ops).catch(function(e){ errorDb(e); throw e; });
+  }
+
+  function cpeItem(c, sel){
+    var d = c.m.cpe || {}, dud = Object.keys(dudososDe(c.m)).length + (c.m.avisos || []).length;
+    var meta = ["CTG " + (d.ctg || "?"), d.grano, d.neto ? d.neto + " kg" : "", d.fecha, c.por ? "por " + c.por.split("@")[0] : ""].filter(Boolean).join(" · ");
+    var pill = c.m.cargada ? '<span class="pill ok">Cargada</span>' : dud ? '<span class="pill warn">Revisar</span>' : '<span class="pill mute">Para cargar</span>';
+    return '<li class="file cpe-it' + (sel ? " sel" : "") + '"><button type="button" class="cpe-pick" data-csel="' + c.id + '"' + (sel ? ' aria-current="true"' : "") + ">" +
+      '<span class="nm">' + esc(d.cpe ? "CP " + d.cpe : c.nombre) + " " + pill + '</span><span class="meta">' + esc(meta) + "</span></button>" +
+      '<button class="x" type="button" data-crm="' + c.id + '" aria-label="Quitar ' + esc(d.cpe || c.nombre) + '"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></li>';
+  }
+  function valorCopia(v, dud, mono, etiqueta){
+    if (!v) return '<span class="muted">—</span>';
+    return '<button type="button" class="copy' + (mono ? " code" : "") + (dud ? " dud" : "") + '" data-copy="' + esc(v) + '" aria-label="Copiar ' + esc(etiqueta) + ": " + esc(v) + '">' +
+      "<span>" + esc(v) + "</span>" + ICO_COPIA + "</button>" + (dud ? '<span class="dudnote">La segunda lectura dio ' + esc(dud) + ": fijate en la carta</span>" : "");
+  }
+  function campoEd(k, v, etiqueta){
+    return '<input class="ed" type="text" data-k="' + k + '" value="' + esc(v || "") + '" aria-label="' + esc(etiqueta) + '" autocomplete="off" spellcheck="false">';
+  }
+  function cpeDetalle(c){
+    var el = $("#cpeDet");
+    if (!c){
+      el.className = "card empty-state";
+      el.innerHTML = "<h2>Todavía no hay cartas de porte</h2><p>Cargá el PDF de la carta de porte (el que baja de ARCA) o una foto. El tablero la lee y te deja cada dato listo para copiar y pegar en Finnegans.</p>";
+      return;
+    }
+    var d = c.m.cpe || {}, dud = dudososDe(c.m), ed = cpeEditando, roles = d.roles || {};
+    var cuando = c.en ? c.en.getDate() + "/" + (c.en.getMonth() + 1) + " " + String(c.en.getHours()).padStart(2, "0") + ":" + String(c.en.getMinutes()).padStart(2, "0") : "";
+    var sub = [d.ctg ? "CTG " + d.ctg : "", c.m.fuente === "pdf" ? "leída del PDF" : "leída de una foto", c.por ? "subida por " + c.por.split("@")[0] + (cuando ? " el " + cuando : "") : ""].filter(Boolean).join(" · ");
+    var h = '<div class="card-head cpe-head"><div><h2 id="hCpe">' + esc(d.cpe ? "Carta de porte " + d.cpe : c.nombre) + '</h2><span class="sub">' + esc(sub) + "</span></div>" +
+      '<div class="toolbar">' + (ed ? '<button class="btn primary" type="button" id="cpeGuardar">Guardar</button><button class="btn" type="button" id="cpeCancelar">Cancelar</button>'
+        : '<label class="chk"><input type="checkbox" id="cpeCargada"' + (c.m.cargada ? " checked" : "") + "> Ya la cargué en Finnegans</label>" +
+          '<button class="btn" type="button" id="cpeEditar">Corregir datos</button>') + "</div></div>";
+    var avisos = (c.m.avisos || []).slice(), nd = Object.keys(dud).length;
+    if (nd) avisos.unshift("Revisá " + (nd === 1 ? "el dato marcado" : "los " + nd + " datos marcados") + " en amarillo: " + Object.keys(dud).map(function(k){ return CPE_NOMBRES[k] || k; }).join(", ") + ".");
+    if (c.m.fuente !== "pdf" && !c.m.revisada) avisos.push("Leída de una foto: compará los números y los nombres con la carta antes de cargarlos. Si algo está mal, tocá Corregir datos.");
+    h += '<div class="card-body cpe-body">';
+    if (avisos.length && !ed) h += '<ul class="cpe-avisos">' + avisos.map(function(a){ return "<li>" + esc(a) + "</li>"; }).join("") + "</ul>";
+    if (imagenes[c.id]) h += '<details class="cpe-foto"' + (ed ? " open" : "") + '><summary>Ver la foto de la carta</summary><img src="' + imagenes[c.id] + '" alt="Foto de la carta de porte ' + esc(d.cpe || "") + '"></details>';
+    if (ed) h += '<p class="small muted" style="margin:0">Corregí lo que haga falta y tocá Guardar. Al guardar, los datos quedan como revisados para todos.</p>';
+
+    function grupo(g){
+      return '<section class="cpe-g"><h3>' + esc(g.t) + '</h3><div class="kv">' + g.f.map(function(f){
+        var v = valorDe(d, f[0]);
+        return '<div class="kv-r"><span class="kv-k">' + esc(f[1]) + '</span><span class="kv-v">' + (ed ? campoEd(f[0], v, f[1]) : valorCopia(v, dud[f[0]], f[2], f[1])) + "</span></div>";
+      }).join("") + "</div></section>";
+    }
+    h += '<div class="cpe-grid">' + grupo(CPE_GRUPOS[0]) + grupo(CPE_GRUPOS[1]) + "</div>";
+    // Intervinientes: en la vista normal, solo los que tienen datos; los vacíos se nombran abajo
+    var llenos = ROLES.filter(function(r){ return roles[r.k]; }), vacios = ROLES.filter(function(r){ return !roles[r.k]; });
+    h += '<section class="cpe-g"><h3>Intervinientes</h3><div class="scroll"><table class="cpe-roles"><thead><tr><th>Rol</th><th>CUIT</th><th>Razón social</th></tr></thead><tbody>' +
+      (ed ? ROLES : llenos).map(function(r){
+        var x = roles[r.k] || {cuit:"", nombre:""};
+        return "<tr><td>" + esc(r.txt) + "</td><td>" + (ed ? campoEd("roles." + r.k + ".cuit", x.cuit, "CUIT de " + r.txt) : valorCopia(x.cuit, null, true, "CUIT de " + r.txt)) +
+          "</td><td>" + (ed ? campoEd("roles." + r.k + ".nombre", x.nombre, r.txt) : valorCopia(x.nombre, null, false, r.txt)) + "</td></tr>";
+      }).join("") + "</tbody></table></div>" +
+      (!ed && vacios.length ? '<p class="small muted cpe-vacios">Vacíos en la carta: ' + esc(vacios.map(function(r){ return r.txt; }).join(", ")) + ".</p>" : "") + "</section>";
+    h += '<div class="cpe-grid">' + grupo(CPE_GRUPOS[2]) + grupo(CPE_GRUPOS[3]) + "</div>" + grupo(CPE_GRUPOS[4]);
+    if (d.obs) h += '<p class="small muted" style="margin:0">Observaciones de la carta: ' + esc(d.obs) + "</p>";
+    el.className = "card";
+    el.innerHTML = h + "</div>";
+  }
+  function cpePorId(id){ return cpes.filter(function(c){ return c.id === id; })[0] || null; }
+  function acondRender(){
+    // La carta elegida puede no haber llegado todavía de la base (recién cargada): se muestra la primera
+    var actual = cpePorId(cpeSel) || cpes[0] || null, selId = actual && actual.id;
+    if (cpeEditando && selId !== cpeVisto) cpeEditando = false;
+    cpeVisto = selId;
+    var items = cpes.map(function(c){ return cpeItem(c, c.id === selId); }).concat(errCpe.map(errItem));
+    $("#listCpe").innerHTML = items.join("") || '<li class="muted small">Todavía no cargaste ninguna carta de porte.</li>';
+    var falta = cpes.filter(function(c){ return !c.m.cargada; }).length;
+    $("#bdgAcond").textContent = falta ? String(falta) : "";
+    $("#btnCpeXls").disabled = !cpes.length;
+    if (!cpeEditando) cpeDetalle(actual);
+  }
+  function copiar(txt){
+    if (navigator.clipboard && window.isSecureContext) return navigator.clipboard.writeText(txt);
+    var t = document.createElement("textarea");
+    t.value = txt; t.setAttribute("readonly", ""); t.style.position = "fixed"; t.style.opacity = "0";
+    document.body.appendChild(t); t.select();
+    var ok = false;
+    try { ok = document.execCommand("copy"); } catch(e){}
+    t.remove();
+    return ok ? Promise.resolve() : Promise.reject(new Error("no se pudo copiar"));
+  }
+  function guardarCorreccion(){
+    var c = cpePorId(cpeVisto);
+    if (!c || !puedeEscribir()) return;
+    var d = JSON.parse(JSON.stringify(c.m.cpe || {}));
+    d.roles = d.roles || {}; d.proc = d.proc || {}; d.dest = d.dest || {};
+    Array.prototype.forEach.call(document.querySelectorAll("#cpeDet .ed"), function(inp){
+      var p = inp.getAttribute("data-k").split("."), v = inp.value.replace(/\s+/g, " ").trim();
+      if (p[0] === "roles"){
+        var x = d.roles[p[1]] || {cuit:"", nombre:""};
+        x[p[2]] = p[2] === "cuit" ? v.replace(/\D/g, "") : v;
+        d.roles[p[1]] = x.cuit || x.nombre ? x : null;
+      }
+      else if (p.length > 1) d[p[0]][p[1]] = v;
+      else d[p[0]] = v;
+    });
+    cpeEditando = false;
+    var cambios = {cpe:d, dudosos:[], avisos:chequeos(d), revisada:true, revisadaPor:usuario.email}, upd = {};
+    Object.keys(cambios).forEach(function(k){ upd["meta." + k] = cambios[k]; c.m[k] = cambios[k]; });
+    db.collection("archivos").doc(c.id).update(upd).then(function(){ toast("Datos corregidos"); }, errorDb);
+    acondRender();
+  }
+  function exportCpe(){
+    if (!downloads || !cpes.length) return;
+    var usados = ROLES.filter(function(r){ return cpes.some(function(c){ return ((c.m.cpe || {}).roles || {})[r.k]; }); });
+    var head = ["Fecha", "Carta de porte", "CTG"];
+    usados.forEach(function(r){ head.push(r.txt + " CUIT", r.txt); });
+    head = head.concat(["Grano", "Campaña", "Peso neto (kg)", "Planta procedencia", "Localidad procedencia", "Planta destino", "Localidad destino", "Km a recorrer", "Cargada en Finnegans", "Leída de"]);
+    var aoa = [head];
+    cpes.slice().reverse().forEach(function(c){
+      var d = c.m.cpe || {}, r = d.roles || {}, p = d.proc || {}, s = d.dest || {}, fila = [d.fecha, d.cpe, d.ctg];
+      usados.forEach(function(x){ fila.push(r[x.k] ? r[x.k].cuit : "", r[x.k] ? r[x.k].nombre : ""); });
+      fila = fila.concat([d.grano, d.campana, d.neto ? +d.neto : null, p.planta, p.localidad, s.planta, s.localidad, d.km ? +d.km : null,
+        c.m.cargada ? "Sí" : "No", c.m.fuente === "pdf" ? "PDF" : "Foto" + (c.m.revisada ? " (revisada)" : "")]);
+      aoa.push(fila);
+    });
+    var ws = XLSX.utils.aoa_to_sheet(aoa);
+    ws["!cols"] = head.map(function(x){ return {wch:Math.max(11, Math.min(34, x.length + 2))}; });
+    var wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Cartas de porte");
+    var buf;
+    try { buf = XLSX.write(wb, {bookType:"xlsx", type:"array"}); } catch(e){ toast("No se pudo armar el Excel."); return; }
+    saveFile("Acondicionamiento " + stamp("-") + ".xlsx", buf, "Excel descargado · " + cpes.length + " cartas de porte");
+  }
+  $("#fileCpe").addEventListener("change", function(e){ handleCpe(e.target.files); e.target.value = ""; });
+  $("#btnCpeXls").addEventListener("click", exportCpe);
+  $("#view-acond").addEventListener("click", function(e){
+    var b = e.target.closest("[data-copy]");
+    if (b){
+      var v = b.getAttribute("data-copy");
+      copiar(v).then(function(){
+        b.classList.add("ok"); setTimeout(function(){ b.classList.remove("ok"); }, 1200);
+        toast("Copiado: " + v, 1600);
+      }, function(){ toast("No se pudo copiar. Seleccioná el texto y copialo a mano."); });
+      return;
+    }
+    var s = e.target.closest("[data-csel]");
+    if (s){
+      cpeSel = s.getAttribute("data-csel"); cpeEditando = false; acondRender();
+      if (window.matchMedia("(max-width:900px)").matches) $("#cpeDet").scrollIntoView({behavior:"smooth", block:"start"});
+      return;
+    }
+    var rm = e.target.closest("[data-crm]");
+    if (rm){
+      var c = cpes.filter(function(x){ return x.id === rm.getAttribute("data-crm"); })[0];
+      if (c) borrarArchivo(c.id, (c.m.cpe && c.m.cpe.cpe) || c.nombre);
+      return;
+    }
+    if (e.target.closest("#cpeEditar")){
+      cpeSel = cpeVisto; cpeEditando = true; cpeDetalle(cpePorId(cpeVisto));
+      var i = $("#cpeDet .ed"); if (i) i.focus();
+      return;
+    }
+    if (e.target.closest("#cpeCancelar")){ cpeEditando = false; acondRender(); return; }
+    if (e.target.closest("#cpeGuardar")) guardarCorreccion();
+  });
+  $("#view-acond").addEventListener("change", function(e){
+    if (e.target.id !== "cpeCargada" || !puedeEscribir() || !cpeVisto) return;
+    db.collection("archivos").doc(cpeVisto).update({"meta.cargada":e.target.checked, "meta.cargadaPor":usuario.email}).catch(errorDb);
+  });
+  var cpeArm;
+  $("#btnCpeClear").addEventListener("click", function(){
+    var b = this;
+    if (!b.classList.contains("armed")){
+      b.classList.add("armed"); b.textContent = "Confirmar: vaciar";
+      clearTimeout(cpeArm);
+      cpeArm = setTimeout(function(){ b.classList.remove("armed"); b.textContent = "Vaciar"; }, 4000);
+      return;
+    }
+    clearTimeout(cpeArm);
+    b.classList.remove("armed"); b.textContent = "Vaciar";
+    vaciar(["cpe"], "Se vaciaron las cartas de porte de acondicionamiento");
+  });
+
   /* ---------- base compartida (Firebase) ---------- */
   // Los datos viven en Firestore, así todos ven lo mismo:
-  //   "archivos": un documento por Excel cargado (tipo fin | buy | cert | fac, quién lo subió y cuándo);
+  //   "archivos": un documento por Excel cargado (tipo fin | buy | cert | fac, quién lo subió y cuándo),
+  //     o por carta de porte de acondicionamiento (tipo cpe, con los datos en meta.cpe);
   //   "partes": las filas de cada Excel, de a 400 por documento.
   // Cada navegador escucha las dos colecciones y rearma el tablero con rebuild().
   var FB_CONFIG = {
@@ -2113,6 +2844,7 @@
   function rebuild(){
     state.rows = []; state.pend = []; state.files = [];
     fact = {cert:[], fac:[], files:[]};
+    cpes = [];
     Array.from(archivos.entries()).map(function(e){ return Object.assign({id:e[0]}, e[1]); })
       .sort(function(a, b){ return (a.orden || 0) - (b.orden || 0); })
       .forEach(function(a){
@@ -2130,8 +2862,9 @@
           addRows(filas, a.nombre, meta, doc);
         }
         else if (a.tipo === "cert" || a.tipo === "fac") addFact(a.tipo, filas, a.nombre, doc);
+        else if (a.tipo === "cpe") cpes.unshift({id:a.id, nombre:a.nombre, m:meta, por:doc.por, en:doc.en});
       });
-    render(); factRender();
+    render(); factRender(); acondRender();
   }
   function puedeEscribir(){
     if (!db || !usuario){ toast("Entrá con tu cuenta de Google para cargar archivos."); return false; }
@@ -2207,7 +2940,7 @@
   $("#btnLogout").addEventListener("click", function(){ if (auth) auth.signOut(); });
 
   /* ---------- pestañas ---------- */
-  var TABS = ["resumen", "cargar", "cartas", "pendientes", "facturas"], tab = "resumen";
+  var TABS = ["resumen", "cargar", "cartas", "pendientes", "facturas", "acond"], tab = "resumen";
   function showTab(name, focus){
     if (TABS.indexOf(name) < 0) name = "resumen";
     tab = name;
@@ -2217,11 +2950,13 @@
       b.tabIndex = on ? 0 : -1;
       $("#view-" + t).hidden = !on;
     });
-    $("#filterbar").hidden = name === "cargar" || name === "facturas";
+    $("#filterbar").hidden = name === "cargar" || name === "facturas" || name === "acond";
     tipHide();
     try { localStorage.setItem(LS + ".tab", name); } catch(e){}
     try { if (location.hash.slice(1) !== name) history.replaceState(null, "", "#" + name); } catch(e){}
     if (focus) $("#tab-" + name).focus();
+    // En pantallas angostas la barra de pestañas se desplaza: que se vea la elegida
+    try { $("#tab-" + name).scrollIntoView({block:"nearest", inline:"nearest"}); } catch(e){}
     if (name === "resumen") renderCharts();
     if (name === "cartas" && tablaSucia) renderTabla();
   }
@@ -2269,7 +3004,8 @@
       e.preventDefault(); e.stopPropagation();
       drops.forEach(function(x){ x.classList.remove("over"); });
       if (!e.dataTransfer || !e.dataTransfer.files.length) return;
-      if (d.hasAttribute("data-fmode")) handleFact(e.dataTransfer.files, d.getAttribute("data-fmode"));
+      if (d.hasAttribute("data-cmode")) handleCpe(e.dataTransfer.files);
+      else if (d.hasAttribute("data-fmode")) handleFact(e.dataTransfer.files, d.getAttribute("data-fmode"));
       else handleFiles(e.dataTransfer.files, d.getAttribute("data-mode"));
     });
   });
@@ -2286,7 +3022,8 @@
     e.preventDefault();
     drops.forEach(function(x){ x.classList.remove("over"); });
     if (!e.dataTransfer || !e.dataTransfer.files.length) return;
-    if (tab === "facturas") handleFact(e.dataTransfer.files, "auto");
+    if (tab === "acond") handleCpe(e.dataTransfer.files);
+    else if (tab === "facturas") handleFact(e.dataTransfer.files, "auto");
     else { handleFiles(e.dataTransfer.files, "auto"); showTab("cargar"); }
   });
   $(".load").addEventListener("click", function(e){
@@ -2338,6 +3075,7 @@
   if (TABS.indexOf(inicial) < 0){ try { inicial = localStorage.getItem(LS + ".tab") || ""; } catch(e){ inicial = ""; } }
   render();
   factRender();
+  acondRender();
   // Sin nada cargado todavía, se arranca por la carga de archivos
   var sinDatos = !state.rows.length && !state.pend.length && !fact.files.length;
   showTab(TABS.indexOf(inicial) >= 0 ? inicial : (sinDatos ? "cargar" : "resumen"));
