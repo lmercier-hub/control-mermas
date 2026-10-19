@@ -1691,6 +1691,9 @@
     if (/<(!doctype html|html|table|tr|td)\b/.test(inicio)){
       var txt = new TextDecoder("utf-8").decode(u8);
       if (txt.indexOf(String.fromCharCode(0xFFFD)) >= 0) txt = new TextDecoder("latin1").decode(u8);
+      // Excel guardado como "Página web": el .xls es solo un marco y los datos quedan en la carpeta "..._archivos"
+      if (/Excel Workbook Frameset|_archivos\/sheet\d+\.htm|_files\/sheet\d+\.htm/i.test(txt))
+        throw new Error("este archivo se guardó como página web y no trae los datos (quedaron en la carpeta “_archivos”). Abrilo en Excel, Archivo → Guardar como → Libro de Excel (.xlsx), y cargá ese");
       var aoa = [];
       txt.split(/<\/tr\s*>/i).forEach(function(tr){
         var celdas = [], re = /<t[dh]\b[^>]*>([\s\S]*?)<\/t[dh]\s*>/gi, m;
