@@ -667,8 +667,9 @@
   };
   // Código de producto y dimensión valor en Finnegans, y columna de la tabla de humedad
   var GRANOS = [
-    {test:function(p){ return p.indexOf("cebada") >= 0 && p.indexOf("cervec") >= 0; }, cod:1178, dim:"COMCEBADACERVECERA", tabla:"cebadacervecera", label:"CEBADA CERVECERA"},
-    {test:function(p){ return p.indexOf("cebada") >= 0 && p.indexOf("forraj") >= 0; }, cod:1934, dim:"COMCEBADAFORRAJERA", tabla:"cebadaforrajera", label:"CEBADA FORRAJERA"},
+    {test:function(p){ return /^ceb|cebada/.test(p) && p.indexOf("forraj") >= 0; }, cod:1934, dim:"COMCEBADAFORRAJERA", tabla:"cebadaforrajera", label:"CEBADA FORRAJERA"},
+    // Cervecera: "Cebada cervecera" o la variedad abreviada ("CEB.MONTOY" en Entregas del Sur). La forrajera siempre dice forrajera.
+    {test:function(p){ return /^ceb|cebada/.test(p); }, cod:1178, dim:"COMCEBADACERVECERA", tabla:"cebadacervecera", label:"CEBADA CERVECERA"},
     {test:function(p){ return p.indexOf("soja") >= 0; }, cod:31, dim:"COMSOJA", tabla:"soja", label:"SOJA"},
     {test:function(p){ return p.indexOf("maiz") >= 0; }, cod:68, dim:"COMMAIZ", tabla:"maiz", label:"MAIZ"},
     {test:function(p){ return p.indexOf("sorgo") >= 0; }, cod:32, dim:"COMSORGO", tabla:"sorgo", label:"SORGO"},
