@@ -123,6 +123,7 @@ Revisa que los CTG que informa cada entregador estén en el reporte de traslados
 ## Diseño
 - Franja verde AED (`--brand-deep`) con el logo Grupo Duhau embebido como webp, y cinco pestañas: Resumen, Cargar archivos, Control de facturas, Acondicionamiento y Pendiente acondicionadora.
 - Las pestañas "Cartas de porte" y "Pendientes Finnegans" se sacaron porque no se usaban (pedido de Luis, 20/10/2026). Sus vistas (`view-cartas`, `view-pendientes`) siguen en el HTML, ocultas, porque el código las sigue llenando; para volver a mostrarlas hay que reponer el botón en `.tabs` y sumarlas a `TABS`. En el Resumen, las tarjetas de estado y la lista "Para revisar" ya no son enlaces.
+- **Resumen:** seis tarjetas arriba: Listas para el IMPORTCERT, Kg recibidos, Merma de humedad, Otras mermas, Mermas totales y Kg finales. "Mermas totales" = (merma de humedad + otras mermas) ÷ kg recibidos, en %; respeta los filtros de arriba.
 - Colores de gráficos, validados para daltonismo:
   - claro: humedad `#2A78D6`, otras mermas `#B8860B`, kg `#1F7A37`;
   - oscuro: `#3987E5`, `#B58714`, `#3A9D52`.

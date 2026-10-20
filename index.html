@@ -118,8 +118,9 @@
   @media (max-width:900px){.grid2{grid-template-columns:1fr}}
 
   /* números de cabecera */
-  .kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
-  @media (max-width:1060px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.kpi:first-child{grid-column:1/-1}}
+  .kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px}
+  @media (max-width:1200px){.kpis{grid-template-columns:repeat(3,minmax(0,1fr))}}
+  @media (max-width:700px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
   .kpi{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:grid;gap:4px;align-content:start}
   .kpi-label{font:600 11px/1.25 var(--sans);text-transform:uppercase;letter-spacing:.09em;color:var(--muted)}
   .kpi-value{font:700 clamp(22px,2.4vw,29px)/1.1 var(--sans);overflow-wrap:anywhere}
@@ -1547,6 +1548,7 @@
       ["Kg recibidos", big(t.origen), t.n + (t.n === 1 ? " carta de porte" : " cartas de porte"), ""],
       ["Merma de humedad", big(t.mh), pct(t.mh, t.origen) + " del recibido", ""],
       ["Otras mermas", big(t.otras), pct(t.otras, t.origen) + " del recibido", ""],
+      ["Mermas totales", pct(t.mh + t.otras, t.origen), big(t.mh + t.otras) + " kg sobre lo recibido", ""],
       ["Kg finales", big(t.fin), pct(t.fin, t.origen) + " del recibido", ""]
     ];
     $("#kpis").innerHTML = tiles.map(function(c){
