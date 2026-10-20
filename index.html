@@ -142,6 +142,7 @@
   .pos{color:var(--bad);font-weight:600}
   .status-item{all:unset;box-sizing:border-box;cursor:pointer;display:grid;gap:2px;padding:10px 12px;border-radius:10px;background:var(--surface-2);box-shadow:inset 0 0 0 1px var(--line)}
   .status-item:hover{box-shadow:inset 0 0 0 1px var(--line-strong)}
+  .status-item.fija,.status-item.fija:hover{cursor:default;box-shadow:inset 0 0 0 1px var(--line)}
   .status-item:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
   .status-item .l{display:flex;gap:8px;align-items:center;font-size:13px}
   .status-item .n{font:700 24px/1.1 var(--sans)}
@@ -170,6 +171,7 @@
   /* avisos */
   .alist{list-style:none;margin:0;padding:0;display:grid;gap:6px}
   .alist button{all:unset;box-sizing:border-box;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:12px;width:100%;padding:10px 12px;border-radius:8px;background:var(--surface-2);box-shadow:inset 0 0 0 1px var(--line)}
+  .alist .aviso{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 12px;border-radius:8px;background:var(--surface-2);box-shadow:inset 0 0 0 1px var(--line)}
   .alist button:hover{box-shadow:inset 0 0 0 1px var(--line-strong)}
   .alist button:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
   .alist .cnt{font:700 15px/1 var(--sans);font-variant-numeric:tabular-nums}
@@ -352,14 +354,6 @@
     <button class="tab" role="tab" id="tab-cargar" aria-controls="view-cargar" aria-selected="false" data-tab="cargar" tabindex="-1">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="m7 8 5-5 5 5"/><path d="M4 15v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4"/></svg>
       Cargar archivos <span class="badge" id="bdgCargar"></span>
-    </button>
-    <button class="tab" role="tab" id="tab-cartas" aria-controls="view-cartas" aria-selected="false" data-tab="cartas" tabindex="-1">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 5h18"/><path d="M3 12h18"/><path d="M3 19h18"/></svg>
-      Cartas de porte <span class="badge" id="bdgCartas"></span>
-    </button>
-    <button class="tab" role="tab" id="tab-pendientes" aria-controls="view-pendientes" aria-selected="false" data-tab="pendientes" tabindex="-1">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
-      Pendientes Finnegans <span class="badge" id="bdgPend"></span>
     </button>
     <button class="tab" role="tab" id="tab-facturas" aria-controls="view-facturas" aria-selected="false" data-tab="facturas" tabindex="-1">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3h14v18l-3-2-2 2-2-2-2 2-2-2-3 2z"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>
@@ -1583,9 +1577,9 @@
     });
     if (!total){ var z = document.createElement("span"); z.style.flex = "1 1 0"; z.style.background = "var(--grid)"; bar.appendChild(z); }
     $("#estadoGrid").innerHTML = segs.map(function(sg){
-      return '<button type="button" class="status-item" data-go="' + sg.go + '" data-estado="' + sg.estado + '" data-warn="' + sg.warn + '">' +
+      return '<div class="status-item fija">' +
         '<span class="l"><i class="sw" style="background:' + sg.color + '"></i>' + sg.label + '</span>' +
-        '<span class="n">' + sg.n + '</span><span class="p">' + (total ? fmtPct(sg.n / total * 100, 0) : "–") + " de los pendientes</span></button>";
+        '<span class="n">' + sg.n + '</span><span class="p">' + (total ? fmtPct(sg.n / total * 100, 0) : "–") + " de los pendientes</span></div>";
     }).join("");
   }
   var BLOQUEAN = ["cod", "grain", "fin", "tab", "neg", "ctg", "fecha", "cp"];
@@ -1605,8 +1599,8 @@
     $("#avisosSub").textContent = cartas ? cartas + (cartas === 1 ? " carta con aviso" : " cartas con aviso") : "";
     $("#avisos").innerHTML = keys.length ? keys.map(function(f){
       var bloquea = BLOQUEAN.indexOf(f) >= 0;
-      return '<li><button type="button" data-warn="' + f + '"><span><span class="pill ' + (bloquea ? "bad" : "warn") + '">' + (bloquea ? "No entra" : "Revisar") + "</span> " +
-        esc(flagLabel(f)) + '</span><span><span class="cnt">' + c[f] + '</span> <span class="go">Ver</span></span></button></li>';
+      return '<li><div class="aviso"><span><span class="pill ' + (bloquea ? "bad" : "warn") + '">' + (bloquea ? "No entra" : "Revisar") + "</span> " +
+        esc(flagLabel(f)) + '</span><span class="cnt">' + c[f] + "</span></div></li>";
     }).join("") : '<li class="muted">Todo en orden: ninguna carta tiene avisos.</li>';
   }
   function renderWarnSelect(){
@@ -1674,11 +1668,10 @@
     var pend = hasPend();
     $("#pendPanel").hidden = !pend;
     $("#pendEmpty").hidden = pend;
-    if (!pend){ $("#bdgPend").textContent = ""; return; }
+    if (!pend) return;
     var find = rowFinder();
     var list = pendScope().filter(function(p){ return !find(p); })
       .sort(function(a, b){ return a.cliente.localeCompare(b.cliente, "es") || dateKey(a.fecha) - dateKey(b.fecha) || a.cp.localeCompare(b.cp); });
-    $("#bdgPend").textContent = String(list.length);
     $("#pendCount").textContent = list.length + " de " + pendScope().length + " pendientes";
     // Columnas según lo que trae el Excel de Finnegans (el listado simple solo tiene CP y CTG)
     var pc = [
@@ -1707,7 +1700,7 @@
     if (!state.rows.length) return "";
     if (hasPend() && !state.pend.length) return "IMPORTCERT vacío: el reporte de Finnegans no tiene traslados pendientes (están todos certificados).";
     if (hasPend() && !lastList.some(function(r){ return matchOf(r); })) return "IMPORTCERT vacío: ninguna descarga del comprador coincide con los pendientes de Finnegans.";
-    return "IMPORTCERT vacío: las cartas a certificar tienen avisos. Revisalas en Cartas de porte.";
+    return "IMPORTCERT vacío: las cartas a certificar tienen avisos. Mirá los avisos en el Resumen, en “Para revisar”.";
   }
   function exportable(r){ return importable(r) && (!hasPend() || !!matchOf(r)); }
   function updateExport(n){
@@ -1753,7 +1746,6 @@
     $("#resEmptyT").textContent = esperando ? "Cargando los datos compartidos…" : "Todavía no hay datos cargados";
     $("#resEmptyP").hidden = esperando;
     $("#resEmptyB").hidden = esperando;
-    $("#bdgCartas").textContent = state.rows.length ? String(base.length) : "";
 
     renderFiles(); renderKpis(t, base); renderEstado(); renderAvisos(base);
     chartData = {grano:mermaRows(group(base, granoDe)), fuente:mermaRows(group(base, fuenteDe)), dia:diaPoints(base)};
@@ -3239,7 +3231,7 @@
   });
 
   /* ---------- pestañas ---------- */
-  var TABS = ["resumen", "cargar", "cartas", "pendientes", "facturas", "acond", "pacond"], tab = "resumen";
+  var TABS = ["resumen", "cargar", "facturas", "acond", "pacond"], tab = "resumen";
   function showTab(name, focus){
     if (TABS.indexOf(name) < 0) name = "resumen";
     tab = name;
@@ -3281,11 +3273,6 @@
     }
     showTab(go);
     window.scrollTo(0, 0);
-  });
-  $("#avisos").addEventListener("click", function(e){
-    var b = e.target.closest("[data-warn]"); if (!b) return;
-    $("#fWarn").value = b.getAttribute("data-warn");
-    render(); showTab("cartas"); window.scrollTo(0, 0);
   });
   $("#btnReset").addEventListener("click", function(){
     ["#fEstado", "#fEmp", "#fCli", "#fProd", "#fFile"].forEach(function(s){ $(s).value = ""; });
