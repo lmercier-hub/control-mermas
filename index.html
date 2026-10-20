@@ -293,6 +293,30 @@
   .cpe-vacios{margin:4px 0 0}
   .ed{font:500 13px/1.2 var(--sans);padding:6px 8px;border:1px solid var(--line-strong);border-radius:6px;background:var(--surface);color:var(--ink);width:100%;min-width:0}
   .ed:focus{outline:2px solid var(--brand);outline-offset:0;border-color:var(--brand)}
+  /* pendiente acondicionadora: CTG 102 de los entregadores contra el reporte de traslados */
+  .pa-load{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+  @media (max-width:1060px){.pa-load{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  @media (max-width:520px){.pa-load{grid-template-columns:1fr}}
+  .pa-load .drop{min-height:112px}
+  .pa-load .drop.ok{border-style:solid;border-color:var(--brand)}
+  .pa-load .drop.ok .pa-st{color:var(--brand)}
+  .pa-load .drop.err{border-style:solid;border-color:var(--bad)}
+  .pa-load .drop.err .pa-st{color:var(--bad)}
+  .pa-role{font:600 11px/1.2 var(--sans);text-transform:uppercase;letter-spacing:.09em;color:var(--muted)}
+  .pa-load .pa-st{overflow-wrap:anywhere}
+  .kpis.k4{grid-template-columns:repeat(4,minmax(0,1fr))}
+  @media (max-width:1060px){.kpis.k4{grid-template-columns:repeat(2,minmax(0,1fr))}.kpis.k4 .kpi:first-child{grid-column:auto}}
+  .kpi.bad .kpi-value{color:var(--bad)}
+  .pa-bars{display:grid;gap:12px}
+  .pa-row{display:grid;grid-template-columns:160px minmax(0,1fr) 170px;gap:12px;align-items:center}
+  .pa-row .who{font-weight:600}
+  .pa-row .nums{font-variant-numeric:tabular-nums;font-size:12.5px;color:var(--muted);text-align:right}
+  .pa-row .nums b{color:var(--ink)}
+  .pa-track{display:flex;gap:2px;height:22px;background:var(--surface-2);box-shadow:inset 0 0 0 1px var(--line);border-radius:6px;overflow:hidden}
+  .pa-track span{display:block;height:100%}
+  @media (max-width:700px){.pa-row{grid-template-columns:minmax(0,1fr) auto;gap:6px 12px}.pa-row .pa-track{grid-column:1/-1;order:3}}
+  .pa-det{white-space:normal;color:var(--muted);font-size:12.5px;min-width:260px}
+  .pa-tag{font:600 10.5px/1 var(--mono);padding:3px 6px;border-radius:5px;background:var(--warn-bg);color:var(--warn);margin-left:6px}
   @media (prefers-reduced-motion: reduce){*{transition:none!important}}
 </style>
 <style>body{margin:0}</style>
@@ -344,6 +368,10 @@
     <button class="tab" role="tab" id="tab-acond" aria-controls="view-acond" aria-selected="false" data-tab="acond" tabindex="-1">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 17V6H2v11h2"/><path d="M14 9h4l4 4v4h-2"/><path d="M8 17h8"/><circle cx="6" cy="17.5" r="2"/><circle cx="18" cy="17.5" r="2"/></svg>
       Acondicionamiento <span class="badge" id="bdgAcond"></span>
+    </button>
+    <button class="tab" role="tab" id="tab-pacond" aria-controls="view-pacond" aria-selected="false" data-tab="pacond" tabindex="-1">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5h11"/><path d="M9 12h11"/><path d="M9 19h11"/><path d="m3 5 1.5 1.5L7 4"/><path d="m3 12 1.5 1.5L7 11"/><path d="M3.5 17.5l3 3M6.5 17.5l-3 3"/></svg>
+      Pendiente acondicionadora <span class="badge" id="bdgPacond"></span>
     </button>
   </div>
 </nav>
@@ -612,6 +640,81 @@
       </div>
       <section class="card" id="cpeDet"></section>
     </div>
+  </section>
+  <!-- PENDIENTE ACONDICIONADORA -->
+  <section class="view" id="view-pacond" role="tabpanel" aria-labelledby="tab-pacond" hidden>
+    <p class="intro">Cargá el reporte de traslados de la empresa y los archivos de cada entregador. El tablero toma los CTG que empiezan con 102 (sacando el 0 de adelante cuando lo tienen) y revisa si están en el reporte.</p>
+    <section class="pa-load" aria-label="Archivos de pendiente acondicionadora">
+      <label class="drop" data-pmode="report" for="filePaReport">
+        <input type="file" id="filePaReport" accept=".xlsx,.xls,.csv">
+        <span class="pa-role">Empresa</span><strong>Reporte de traslados</strong><span class="pa-st">Arrastrá o elegí el Excel</span>
+      </label>
+      <label class="drop" data-pmode="costa" for="filePaCosta">
+        <input type="file" id="filePaCosta" accept=".xlsx,.xls,.csv">
+        <span class="pa-role">Entregador</span><strong>La Costa Cereales</strong><span class="pa-st">Arrastrá o elegí el Excel</span>
+      </label>
+      <label class="drop" data-pmode="sur" for="filePaSur">
+        <input type="file" id="filePaSur" accept=".xlsx,.xls,.csv">
+        <span class="pa-role">Entregador</span><strong>Entregas del Sur</strong><span class="pa-st">Arrastrá o elegí el Excel</span>
+      </label>
+      <label class="drop" data-pmode="will" for="filePaWill">
+        <input type="file" id="filePaWill" accept=".xlsx,.xls,.csv">
+        <span class="pa-role">Entregador</span><strong>Williams Entregas</strong><span class="pa-st">Arrastrá o elegí el Excel</span>
+      </label>
+    </section>
+
+    <section class="kpis k4" id="paKpis" aria-label="Resumen de pendiente acondicionadora"></section>
+
+    <section class="card" aria-labelledby="hPaBars">
+      <div class="card-head"><h2 id="hPaBars">Estado por entregador</h2></div>
+      <div class="card-body">
+        <div class="legend"><span><i class="sw" style="background:var(--st-good)"></i>Está en el reporte</span><span><i class="sw" style="background:var(--bad)"></i>Falta en el reporte</span></div>
+        <div class="pa-bars" id="paBars"></div>
+      </div>
+    </section>
+
+    <section class="card" aria-labelledby="hPaTbl">
+      <div class="card-head" style="padding-bottom:14px;border-bottom:1px solid var(--line)">
+        <h2 id="hPaTbl">Detalle de CTG</h2>
+        <div class="toolbar">
+          <select id="paEstado" aria-label="Estado">
+            <option value="m">Faltan en el reporte</option>
+            <option value="f">Están en el reporte</option>
+            <option value="all">Todos</option>
+          </select>
+          <select id="paDrv" aria-label="Entregador">
+            <option value="all">Todos los entregadores</option>
+            <option value="costa">La Costa Cereales</option>
+            <option value="sur">Entregas del Sur</option>
+            <option value="will">Williams Entregas</option>
+          </select>
+          <input type="search" id="paQ" placeholder="Buscar CTG o dato" aria-label="Buscar CTG o dato">
+          <span class="count" id="paCount"></span>
+          <button class="btn" type="button" id="btnPaCopyTbl">Copiar para Excel</button>
+          <button class="btn" type="button" id="btnPaCopy">Copiar solo CTG</button>
+        </div>
+      </div>
+      <div class="scroll tall">
+        <table>
+          <thead><tr><th>Estado</th><th>Entregador</th><th>CTG</th><th>Datos del archivo</th></tr></thead>
+          <tbody id="paTbody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card" aria-labelledby="hPaReglas">
+      <div class="card-head"><h2 id="hPaReglas">Cómo se compara</h2></div>
+      <div class="card-body">
+        <ul class="small muted" style="margin:0;padding-left:18px">
+          <li>Se usa la columna llamada "Ctg" de cada archivo. Si no existe, se elige la columna con más números de 11 o 12 dígitos.</li>
+          <li>Un CTG de 12 dígitos que empieza con 0 (por ejemplo 010235494132) se pasa a 11 dígitos antes de compararlo.</li>
+          <li>Solo se revisan los CTG de 11 dígitos que empiezan con 102. Los demás se ignoran.</li>
+          <li>Estos archivos se leen en esta computadora y no se guardan en la base compartida: si recargás la página hay que cargarlos de nuevo.</li>
+        </ul>
+      </div>
+    </section>
+
+    <div class="load-actions"><span></span><button class="btn" id="btnPaClear" type="button">Vaciar pendiente acondicionadora</button></div>
   </section>
 </main>
 
@@ -2943,8 +3046,200 @@
   $("#btnOtra").addEventListener("click", function(){ auth.signOut().then(entrar); });
   $("#btnLogout").addEventListener("click", function(){ if (auth) auth.signOut(); });
 
+  /* ---------- pestaña Pendiente acondicionadora ---------- */
+  // Revisa que los CTG 102 que informa cada entregador estén en el reporte de traslados de la empresa.
+  // Los archivos se leen en el navegador y no se guardan en la base compartida.
+  var PA_DRV = {costa:"La Costa Cereales", sur:"Entregas del Sur", will:"Williams Entregas"};
+  var pa = {report:null, drv:{}, limit:200};
+  function paNorm(v){
+    if (v == null) return {n:"", z:false};
+    var s = typeof v === "number" ? String(Math.round(v)) : String(v).trim();
+    s = s.replace(/\D/g, "");
+    if (s.length === 12 && s[0] === "0") return {n:s.slice(1), z:true};
+    return {n:s, z:false};
+  }
+  function paHojas(buf){
+    var wb = leerLibro(buf);
+    return wb.SheetNames.map(function(n){
+      return XLSX.utils.sheet_to_json(wb.Sheets[n], {header:1, raw:true, defval:""});
+    }).filter(function(rows){ return rows.length; });
+  }
+  // Columna "Ctg" en las primeras 15 filas; si no hay, la que tiene más números de 11 o 12 dígitos
+  function paCol(rows){
+    for (var r = 0; r < Math.min(rows.length, 15); r++){
+      var row = rows[r] || [];
+      for (var c = 0; c < row.length; c++){
+        var h = String(row[c]).trim().toLowerCase().replace(/[\s. ]/g, "");
+        if (h.indexOf("ctg") === 0 && h.indexOf("cartadeporte") < 0) return {col:c, header:r};
+      }
+    }
+    var cnt = {}, best = -1, bc = 0;
+    for (var i = 0; i < Math.min(rows.length, 500); i++) (rows[i] || []).forEach(function(v, c){
+      var s = String(v).replace(/\D/g, "");
+      if (s.length === 11 || s.length === 12) cnt[c] = (cnt[c] || 0) + 1;
+    });
+    for (var k in cnt) if (cnt[k] > bc){ bc = cnt[k]; best = +k; }
+    return best < 0 ? null : {col:best, header:-1};
+  }
+  function paReport(buf, name){
+    var set = new Set();
+    paHojas(buf).forEach(function(rows){
+      var f = paCol(rows); if (!f) return;
+      for (var r = f.header + 1; r < rows.length; r++){ var x = paNorm((rows[r] || [])[f.col]); if (x.n) set.add(x.n); }
+    });
+    if (!set.size) throw new Error("no encontré una columna de CTG");
+    return {name:name, set:set};
+  }
+  function paDriver(buf, name){
+    var items = new Map(), total = 0;
+    paHojas(buf).forEach(function(rows){
+      var f = paCol(rows); if (!f) return;
+      var hdr = f.header >= 0 ? rows[f.header] : [];
+      for (var r = f.header + 1; r < rows.length; r++){
+        var row = rows[r] || [], x = paNorm(row[f.col]);
+        if (!x.n) continue;
+        total++;
+        if (!/^102\d{8}$/.test(x.n)) continue;
+        var e = items.get(x.n);
+        if (e){ e.dup++; e.z = e.z || x.z; continue; }
+        var det = [];
+        for (var c = 0; c < row.length && det.length < 3; c++){
+          if (c === f.col) continue;
+          var v = row[c];
+          if (v === "" || v == null) continue;
+          if (v instanceof Date) v = v.toLocaleDateString("es-AR");
+          var h = String(hdr[c] == null ? "" : hdr[c]).trim();
+          det.push((h ? h + ": " : "") + String(v).slice(0, 40));
+        }
+        items.set(x.n, {n:x.n, z:x.z, dup:1, det:det.join(" · ")});
+      }
+    });
+    if (!total) throw new Error("no encontré una columna de CTG");
+    return {name:name, items:Array.from(items.values())};
+  }
+  function paDrop(key, cls, msg){
+    var d = document.querySelector('[data-pmode="' + key + '"]');
+    d.classList.remove("ok", "err"); if (cls) d.classList.add(cls);
+    d.querySelector(".pa-st").textContent = msg;
+  }
+  function paFile(key, file){
+    if (!file) return;
+    if (!/\.(xlsx|xls|csv)$/i.test(file.name)){ toast("Elegí un archivo .xlsx, .xls o .csv"); return; }
+    if (typeof XLSX === "undefined"){ toast("No se pudo cargar el lector de Excel. Recargá la página."); return; }
+    paDrop(key, "", "Leyendo " + file.name + "…");
+    file.arrayBuffer().then(function(buf){
+      if (key === "report"){
+        pa.report = paReport(buf, file.name);
+        paDrop(key, "ok", "✓ " + file.name + " · " + pa.report.set.size + " CTG únicos");
+      } else {
+        pa.drv[key] = paDriver(buf, file.name);
+        paDrop(key, "ok", "✓ " + file.name + " · " + pa.drv[key].items.length + " CTG 102");
+      }
+    }).catch(function(e){
+      if (key === "report") pa.report = null; else delete pa.drv[key];
+      paDrop(key, "err", "✗ " + file.name + ": " + (e && e.message ? e.message : "formato desconocido"));
+    }).then(function(){ pa.limit = 200; paRender(); });
+  }
+  function paResults(){
+    var out = [];
+    Object.keys(PA_DRV).forEach(function(k){
+      var d = pa.drv[k]; if (!d) return;
+      d.items.forEach(function(it){
+        out.push({k:k, drv:PA_DRV[k], n:it.n, z:it.z, dup:it.dup, det:it.det, found:pa.report ? pa.report.set.has(it.n) : null});
+      });
+    });
+    return out;
+  }
+  function paFiltered(){
+    var est = $("#paEstado").value, drv = $("#paDrv").value, q = $("#paQ").value.trim().toLowerCase();
+    return paResults().filter(function(r){
+      return (drv === "all" || r.k === drv) &&
+        (est === "all" || (est === "m" ? r.found !== true : r.found === true)) &&
+        (!q || r.n.indexOf(q) >= 0 || r.det.toLowerCase().indexOf(q) >= 0);
+    });
+  }
+  function paRender(){
+    var res = paResults(), ready = !!pa.report, cargados = Object.keys(pa.drv).length;
+    var tot = res.length, fnd = res.filter(function(r){ return r.found; }).length, mis = ready ? tot - fnd : 0;
+    var cero = res.filter(function(r){ return r.z; }).length;
+    var kpi = function(cls, l, v, s){ return '<div class="kpi' + cls + '"><div class="kpi-label">' + l + '</div><div class="kpi-value">' + v + '</div><div class="kpi-sub">' + s + "</div></div>"; };
+    $("#paKpis").innerHTML =
+      kpi("", "CTG 102 de entregadores", tot, cargados + " de 3 archivos cargados") +
+      kpi("", "Están en el reporte", ready ? fnd : "–", ready ? (tot ? Math.round(fnd / tot * 1000) / 10 + "% del total" : "Sin CTG para revisar") : "Falta cargar el reporte") +
+      kpi(mis ? " bad" : "", "Faltan en el reporte", ready ? mis : "–", ready ? (mis ? "Para revisar" : "Sin diferencias") : "Falta cargar el reporte") +
+      kpi("", "Venían con 0 adelante", cero, "Se compararon sin el 0");
+    $("#paBars").innerHTML = Object.keys(PA_DRV).map(function(k){
+      var d = pa.drv[k];
+      if (!d) return '<div class="pa-row"><div class="who">' + PA_DRV[k] + '</div><div class="pa-track"></div><div class="nums">Sin archivo</div></div>';
+      var rr = res.filter(function(r){ return r.k === k; }), t = rr.length;
+      var f = rr.filter(function(r){ return r.found; }).length, m = ready ? t - f : 0;
+      var seg = !t ? "" : ready
+        ? '<span style="width:' + (f / t * 100) + '%;background:var(--st-good)"></span><span style="width:' + (m / t * 100) + '%;background:var(--bad)"></span>'
+        : '<span style="width:100%;background:var(--st-none)"></span>';
+      return '<div class="pa-row"><div class="who">' + PA_DRV[k] + '</div><div class="pa-track" title="' + f + " en el reporte, " + m + ' faltan">' + seg + '</div><div class="nums">' +
+        (ready ? "<b>" + f + '</b> ok · <b class="neg">' + m + "</b> faltan" : t + " CTG 102") + "</div></div>";
+    }).join("");
+    $("#bdgPacond").textContent = mis ? String(mis) : "";
+    paRows();
+  }
+  function paRows(){
+    var list = paFiltered(), ready = !!pa.report, any = Object.keys(pa.drv).length > 0;
+    $("#paCount").textContent = any && !ready ? "Falta el reporte" : list.length + " CTG";
+    if (!list.length){
+      var msg = !any ? "Todavía no cargaste archivos de entregadores." : !ready ? "Cargá el reporte de traslados para ver el estado de cada CTG." :
+        $("#paEstado").value === "m" ? "No hay CTG faltantes con estos filtros." : "No hay resultados con estos filtros.";
+      $("#paTbody").innerHTML = '<tr class="empty"><td colspan="4">' + msg + "</td></tr>";
+      return;
+    }
+    var h = list.slice(0, pa.limit).map(function(r){
+      var st = r.found === null ? '<span class="pill mute">Sin reporte</span>' : r.found ? '<span class="pill ok">En el reporte</span>' : '<span class="pill bad">Falta</span>';
+      return "<tr" + (r.found === false ? ' class="bad"' : "") + "><td>" + st + "</td><td>" + esc(r.drv) + '</td><td class="code">' + r.n +
+        (r.z ? '<span class="pa-tag">tenía 0</span>' : "") + (r.dup > 1 ? '<span class="pa-tag">×' + r.dup + "</span>" : "") +
+        '</td><td class="pa-det">' + esc(r.det) + "</td></tr>";
+    }).join("");
+    if (list.length > pa.limit) h += '<tr class="empty"><td colspan="4"><button class="linkbtn" type="button" id="btnPaMas">Mostrar más (' + (list.length - pa.limit) + " restantes)</button></td></tr>";
+    $("#paTbody").innerHTML = h;
+  }
+  function paCopiar(btn, label, texto){
+    var listo = function(m){ btn.textContent = m; setTimeout(function(){ btn.textContent = label; }, 1800); };
+    var t = texto();
+    if (!t){ toast("No hay CTG en la lista"); return; }
+    var viejo = function(){
+      var ta = document.createElement("textarea"); ta.value = t; document.body.appendChild(ta); ta.select();
+      try { document.execCommand("copy"); listo("Copiado ✓"); } catch(e){ listo("No se pudo copiar"); }
+      ta.remove();
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(function(){ listo("Copiado ✓"); }, viejo);
+    else viejo();
+  }
+  $("#btnPaCopy").addEventListener("click", function(){
+    paCopiar(this, "Copiar solo CTG", function(){ return paFiltered().map(function(r){ return r.n; }).join("\n"); });
+  });
+  $("#btnPaCopyTbl").addEventListener("click", function(){
+    paCopiar(this, "Copiar para Excel", function(){
+      var l = paFiltered(); if (!l.length) return "";
+      return ["Estado\tEntregador\tCTG\tObservación\tDatos del archivo"].concat(l.map(function(r){
+        return [r.found === null ? "Sin reporte" : r.found ? "En el reporte" : "Falta", r.drv, r.n,
+          (r.z ? "Venía con 0. " : "") + (r.dup > 1 ? "Repetido x" + r.dup : ""), r.det].join("\t");
+      })).join("\n");
+    });
+  });
+  ["#paEstado", "#paDrv"].forEach(function(s){ $(s).addEventListener("change", function(){ pa.limit = 200; paRows(); }); });
+  var paTimer = 0;
+  $("#paQ").addEventListener("input", function(){ clearTimeout(paTimer); paTimer = setTimeout(function(){ pa.limit = 200; paRows(); }, 250); });
+  $("#paTbody").addEventListener("click", function(e){ if (e.target.closest("#btnPaMas")){ pa.limit += 500; paRows(); } });
+  Array.prototype.forEach.call(document.querySelectorAll("[data-pmode] input"), function(inp){
+    inp.addEventListener("change", function(){ paFile(inp.closest("[data-pmode]").getAttribute("data-pmode"), inp.files[0]); inp.value = ""; });
+  });
+  $("#btnPaClear").addEventListener("click", function(){
+    pa.report = null; pa.drv = {}; pa.limit = 200;
+    ["report"].concat(Object.keys(PA_DRV)).forEach(function(k){ paDrop(k, "", "Arrastrá o elegí el Excel"); });
+    paRender();
+    toast("Se vació la pendiente acondicionadora");
+  });
+
   /* ---------- pestañas ---------- */
-  var TABS = ["resumen", "cargar", "cartas", "pendientes", "facturas", "acond"], tab = "resumen";
+  var TABS = ["resumen", "cargar", "cartas", "pendientes", "facturas", "acond", "pacond"], tab = "resumen";
   function showTab(name, focus){
     if (TABS.indexOf(name) < 0) name = "resumen";
     tab = name;
@@ -2954,7 +3249,7 @@
       b.tabIndex = on ? 0 : -1;
       $("#view-" + t).hidden = !on;
     });
-    $("#filterbar").hidden = name === "cargar" || name === "facturas" || name === "acond";
+    $("#filterbar").hidden = name === "cargar" || name === "facturas" || name === "acond" || name === "pacond";
     tipHide();
     try { localStorage.setItem(LS + ".tab", name); } catch(e){}
     try { if (location.hash.slice(1) !== name) history.replaceState(null, "", "#" + name); } catch(e){}
@@ -3008,7 +3303,8 @@
       e.preventDefault(); e.stopPropagation();
       drops.forEach(function(x){ x.classList.remove("over"); });
       if (!e.dataTransfer || !e.dataTransfer.files.length) return;
-      if (d.hasAttribute("data-cmode")) handleCpe(e.dataTransfer.files);
+      if (d.hasAttribute("data-pmode")) paFile(d.getAttribute("data-pmode"), e.dataTransfer.files[0]);
+      else if (d.hasAttribute("data-cmode")) handleCpe(e.dataTransfer.files);
       else if (d.hasAttribute("data-fmode")) handleFact(e.dataTransfer.files, d.getAttribute("data-fmode"));
       else handleFiles(e.dataTransfer.files, d.getAttribute("data-mode"));
     });
@@ -3027,6 +3323,7 @@
     drops.forEach(function(x){ x.classList.remove("over"); });
     if (!e.dataTransfer || !e.dataTransfer.files.length) return;
     if (tab === "acond") handleCpe(e.dataTransfer.files);
+    else if (tab === "pacond") toast("Soltá el archivo en el cuadro que corresponde (reporte o entregador)");
     else if (tab === "facturas") handleFact(e.dataTransfer.files, "auto");
     else { handleFiles(e.dataTransfer.files, "auto"); showTab("cargar"); }
   });
@@ -3080,6 +3377,7 @@
   render();
   factRender();
   acondRender();
+  paRender();
   // Sin nada cargado todavía, se arranca por la carga de archivos
   var sinDatos = !state.rows.length && !state.pend.length && !fact.files.length;
   showTab(TABS.indexOf(inicial) >= 0 ? inicial : (sinDatos ? "cargar" : "resumen"));

@@ -99,6 +99,14 @@ Es para los camiones que van a acondicionarse por calidad baja. Se carga la cart
 - **Excel:** "Descargar Excel" baja una fila por carta, con las columnas de intervinientes que tengan datos.
 - **Fechas:** en esta pestaña van completas (`07/10/2026`), como en la carta, porque se pegan en Finnegans.
 
+## Pestaña "Pendiente acondicionadora"
+Revisa que los CTG que informa cada entregador estén en el reporte de traslados de la empresa.
+- **Cuatro cuadros de carga** (uno por archivo): reporte de traslados de la empresa, La Costa Cereales, Entregas del Sur y Williams Entregas.
+- **Columna de CTG:** la que se llama "Ctg" (en las primeras 15 filas); si no hay, la que tiene más números de 11 o 12 dígitos (`paCol()`).
+- **Normalización:** un CTG de 12 dígitos que empieza con 0 se pasa a 11 (`paNorm()`). De los entregadores solo se revisan los de 11 dígitos que empiezan con 102; los repetidos se cuentan una vez y se marcan ×n.
+- **Resultado:** cuántos están y cuántos faltan en el reporte, barras por entregador y tabla con filtros. "Copiar para Excel" y "Copiar solo CTG" copian lo filtrado.
+- **No se guarda en Firebase ni en localStorage:** vive en memoria (`pa`). Al recargar la página hay que volver a cargar los archivos.
+
 ## Datos compartidos (Firebase)
 - **Proyecto:** Firebase `control-mermas-b902e`, consola de Luis. La configuración web está en `FB_CONFIG` dentro de `index.html`; no es secreta.
 - **Ingreso:** con Google. Solo entran los mails que figuran en las reglas de Firestore. Hoy son `lmercier@admin.com.ar`, `jaquerreta@admin.com.ar` y `bpugliese@admin.com.ar`; copia de las reglas en `firestore.rules`.
@@ -113,7 +121,7 @@ Es para los camiones que van a acondicionarse por calidad baja. Se carga la cart
 - **Quitar y vaciar:** quitar un archivo o "Vaciar todo" borra los documentos de la base para todos.
 
 ## Diseño
-- Franja verde AED (`--brand-deep`) con el logo Grupo Duhau embebido como webp, y seis pestañas: Resumen, Cargar archivos, Cartas de porte, Pendientes Finnegans, Control de facturas y Acondicionamiento.
+- Franja verde AED (`--brand-deep`) con el logo Grupo Duhau embebido como webp, y siete pestañas: Resumen, Cargar archivos, Cartas de porte, Pendientes Finnegans, Control de facturas, Acondicionamiento y Pendiente acondicionadora.
 - Colores de gráficos, validados para daltonismo:
   - claro: humedad `#2A78D6`, otras mermas `#B8860B`, kg `#1F7A37`;
   - oscuro: `#3987E5`, `#B58714`, `#3A9D52`.
