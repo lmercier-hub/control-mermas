@@ -107,12 +107,32 @@ Revisa que los CTG que informa cada entregador estén en el reporte de traslados
 - **Resultado:** cuántos están y cuántos faltan en el reporte, barras por entregador y tabla con filtros. "Copiar para Excel" y "Copiar solo CTG" copian lo filtrado.
 - **No se guarda en Firebase ni en localStorage:** vive en memoria (`pa`). Al recargar la página hay que volver a cargar los archivos.
 
+## Pestaña "Facturas de acondicionamiento"
+Facturas de las acondicionadoras (secado, paritaria, zarandeo, fumigación, mezcla, bactericida), controladas contra su detalle. Reemplaza al "Panel de Acondicionamiento" que estaba en un artifact de Claude.
+- **Secciones:** Resumen, Facturas, CTG duplicados, Cargar y Descuentos pactados.
+- **Lector propio, sin Claude:** los PDF se leen con pdf.js (`afPaginas()` → renglones de texto por hoja). `AF_PROVS` tiene una entrada por acondicionadora: `test` reconoce al emisor, `esFactura`/`esTicket` reconocen la hoja y `factura()`/`ticket()` la leen. `afArmar()` junta factura y tickets por CTG y arma los controles (`checks`).
+  - **Con lector hoy:** AgroCereales Don Fernando (factura con un renglón por CTG + "Detalle" con un ticket de entrada por hoja: kg bruto/tara/neto, humedad y costos por concepto).
+  - **Sin lector todavía:** Vittori, Florencia, SEAC, Cereales Bahía y Agro World. Se reconocen para agrupar, pero sus PDF dan aviso. Para sumar una: pedir 1–2 facturas y detalles reales, completar su entrada en `AF_PROVS` y probar que todos los controles cierren.
+  - Montos con `afNum()` (1.859.988,00); `toNum()` no sirve para montos con decimales. CTG siempre de 11 dígitos (`afCtg()`).
+- **Controles de cada factura:** cada CTG tiene su ticket y el ticket suma lo mismo que el renglón de la factura; los renglones suman el subtotal; descuento = % × subtotal; subtotal − descuento = neto; IVA 21 % del neto; neto + IVA = total. Tolerancia de $ 1.
+- **Cuentas (`afCalc()`), confirmadas con Luis:**
+  - Siempre en pesos y sin IVA, con el descuento aplicado. USD × TC de la factura; sin TC no se suma (aviso).
+  - El descuento se reparte en cada CTG y concepto en proporción (factor = neto ÷ subtotal).
+  - Toneladas = kg que entraron a la acondicionadora (Neto del ticket = bruto − tara).
+  - $/TN neto = neto ÷ toneladas; $/TN sin descuento; descuento ponderado; paritaria, secado y otros por TN.
+  - Secado por punto = secado neto ÷ Σ(TN × (humedad − base)). La base por grano la carga el usuario en "Descuentos pactados"; si no está, no se calcula (no se inventa).
+  - Si falta un dato (toneladas, TC, neto), la factura queda afuera de esa cuenta y se avisa. Sin neto se estima total ÷ 1,21 y se avisa.
+- **Descuento pactado:** se carga por acondicionadora. Si una factura trae otro descuento, queda "Descuento distinto al pactado". Ojo: Vittori trae el descuento metido en el precio de cada línea.
+- **Importar del panel anterior:** un .json con `facturas` en el formato viejo (`afDesdePanel()`). Ese archivo NO va al repositorio (el repo es público y tiene montos y CTG).
+- **Cómo se guarda:** cada factura es un documento de `archivos` tipo `acf` (datos en `meta.f`, sin `partes`); la misma acondicionadora + número reemplaza a la anterior. Descuentos pactados y humedades base: un documento tipo `acfcfg` (`meta.pactos`, `meta.bases`).
+- **No meter facturas, montos ni CTG reales en el código:** el repositorio es público.
+
 ## Datos compartidos (Firebase)
 - **Proyecto:** Firebase `control-mermas-b902e`, consola de Luis. La configuración web está en `FB_CONFIG` dentro de `index.html`; no es secreta.
 - **Ingreso:** con Google. Solo entran los mails que figuran en las reglas de Firestore. Hoy son `lmercier@admin.com.ar`, `jaquerreta@admin.com.ar` y `bpugliese@admin.com.ar`; copia de las reglas en `firestore.rules`.
 - **Para sumar a alguien:** agregar su mail en las reglas, en Firebase → Firestore → Reglas → Publicar, y actualizar `firestore.rules`.
 - **Colecciones:**
-  - `archivos`: un documento por Excel cargado, con nombre, tipo (`fin` | `buy` | `cert` | `fac`), meta, cantidad de partes, `subidoPor`, `subidoEn` y `orden`. También uno por carta de porte de acondicionamiento (tipo `cpe`, sin partes).
+  - `archivos`: un documento por Excel cargado, con nombre, tipo (`fin` | `buy` | `cert` | `fac`), meta, cantidad de partes, `subidoPor`, `subidoEn` y `orden`. También uno por carta de porte de acondicionamiento (tipo `cpe`, sin partes), uno por factura de acondicionamiento (tipo `acf`) y uno con los descuentos pactados (tipo `acfcfg`).
   - `partes`: las filas de cada Excel, de a 400, con `archivoId` e `idx`. Solo se guardan los campos de `CAMPOS`; lo demás se recalcula en `rebuild()`.
 - **Sincronización:** cada navegador escucha las dos colecciones y rearma el tablero con `rebuild()`. No se guarda nada en localStorage salvo la pestaña elegida.
 - **Al cargar archivos:**
@@ -121,7 +141,7 @@ Revisa que los CTG que informa cada entregador estén en el reporte de traslados
 - **Quitar y vaciar:** quitar un archivo o "Vaciar todo" borra los documentos de la base para todos.
 
 ## Diseño
-- Franja verde AED (`--brand-deep`) con el logo Grupo Duhau embebido como webp, y cinco pestañas: Resumen, Cargar archivos, Control de facturas, Acondicionamiento y Pendiente acondicionadora.
+- Franja verde AED (`--brand-deep`) con el logo Grupo Duhau embebido como webp, y seis pestañas: Resumen, Cargar archivos, Control de facturas, Acondicionamiento, Pendiente acondicionadora y Facturas de acondicionamiento.
 - Las pestañas "Cartas de porte" y "Pendientes Finnegans" se sacaron porque no se usaban (pedido de Luis, 20/10/2026). Sus vistas (`view-cartas`, `view-pendientes`) siguen en el HTML, ocultas, porque el código las sigue llenando; para volver a mostrarlas hay que reponer el botón en `.tabs` y sumarlas a `TABS`. En el Resumen, las tarjetas de estado y la lista "Para revisar" ya no son enlaces.
 - **Resumen:** seis tarjetas arriba: Listas para el IMPORTCERT, Kg recibidos, Merma de humedad, Otras mermas, Mermas totales y Kg finales. "Mermas totales" = (merma de humedad + otras mermas) ÷ kg recibidos, en %; respeta los filtros de arriba.
 - Colores de gráficos, validados para daltonismo:

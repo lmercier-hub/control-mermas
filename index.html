@@ -320,6 +320,36 @@
   @media (max-width:700px){.pa-row{grid-template-columns:minmax(0,1fr) auto;gap:6px 12px}.pa-row .pa-track{grid-column:1/-1;order:3}}
   .pa-det{white-space:normal;color:var(--muted);font-size:12.5px;min-width:260px}
   .pa-tag{font:600 10.5px/1 var(--mono);padding:3px 6px;border-radius:5px;background:var(--warn-bg);color:var(--warn);margin-left:6px}
+  /* facturas de acondicionamiento */
+  .af-nav{display:flex;flex-wrap:wrap;gap:6px}
+  .af-nav button{font:600 13px/1 var(--sans);padding:9px 14px;border-radius:8px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted);cursor:pointer}
+  .af-nav button:hover{border-color:var(--brand);color:var(--ink)}
+  .af-nav button[aria-pressed="true"]{background:var(--brand-deep);border-color:var(--brand-deep);color:#fff}
+  .af-filtros{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .kpis.k6{grid-template-columns:repeat(6,minmax(0,1fr))}
+  @media (max-width:1200px){.kpis.k6{grid-template-columns:repeat(3,minmax(0,1fr))}}
+  @media (max-width:700px){.kpis.k6{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  .af-bars{display:grid;gap:10px}
+  .af-bar{display:grid;grid-template-columns:minmax(110px,190px) minmax(0,1fr) minmax(150px,auto);gap:12px;align-items:center;font-size:13px}
+  .af-bar .t{height:14px;background:var(--surface-2);box-shadow:inset 0 0 0 1px var(--line);border-radius:4px;overflow:hidden}
+  .af-bar .t span{display:block;height:100%;background:var(--brand)}
+  .af-bar .v{font-variant-numeric:tabular-nums;color:var(--muted);text-align:right;white-space:nowrap}
+  .af-bar .v b{color:var(--ink)}
+  @media (max-width:640px){.af-bar{grid-template-columns:minmax(0,1fr) auto}.af-bar .t{grid-column:1/-1;order:3}}
+  .af-checks{list-style:none;margin:0;padding:0;display:grid;gap:4px;font-size:12.5px}
+  .af-checks li{display:flex;gap:8px;align-items:baseline;white-space:normal}
+  .af-checks .m{font-weight:700;width:14px;flex:none}
+  .af-checks .ok .m{color:var(--brand)} .af-checks .no .m{color:var(--bad)}
+  .af-det td{background:var(--surface-2);white-space:normal}
+  .af-det-in{display:grid;gap:14px;padding:6px 0;width:0;min-width:100%}
+  #view-afact > div{min-width:0}
+  .kpis.k6 .kpi-value{font-size:clamp(19px,1.75vw,25px);white-space:nowrap}
+  .af-det-in table{background:var(--surface);border:1px solid var(--line);border-radius:8px}
+  .af-res{display:grid;gap:14px}
+  .af-res .card-body{display:grid;gap:12px}
+  tr.af-row{cursor:pointer}
+  .af-cfg input{width:90px;font:400 13px/1.2 var(--sans);padding:6px 8px;border:1px solid var(--line-strong);border-radius:6px;background:var(--surface);color:var(--ink)}
+  .af-avisos{margin:0;padding:10px 14px 10px 30px;border-radius:10px;background:var(--warn-bg);font-size:13px;display:grid;gap:4px}
   @media (prefers-reduced-motion: reduce){*{transition:none!important}}
 </style>
 <style>body{margin:0}</style>
@@ -367,6 +397,10 @@
     <button class="tab" role="tab" id="tab-pacond" aria-controls="view-pacond" aria-selected="false" data-tab="pacond" tabindex="-1">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5h11"/><path d="M9 12h11"/><path d="M9 19h11"/><path d="m3 5 1.5 1.5L7 4"/><path d="m3 12 1.5 1.5L7 11"/><path d="M3.5 17.5l3 3M6.5 17.5l-3 3"/></svg>
       Pendiente acondicionadora <span class="badge" id="bdgPacond"></span>
+    </button>
+    <button class="tab" role="tab" id="tab-afact" aria-controls="view-afact" aria-selected="false" data-tab="afact" tabindex="-1">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3h14v18l-3-2-2 2-2-2-2 2-2-2-3 2z"/><path d="M9 8h6"/><path d="M9 12h6"/><path d="M12 15v3"/></svg>
+      Facturas de acondicionamiento <span class="badge" id="bdgAfact"></span>
     </button>
   </div>
 </nav>
@@ -710,6 +744,120 @@
     </section>
 
     <div class="load-actions"><span></span><button class="btn" id="btnPaClear" type="button">Vaciar pendiente acondicionadora</button></div>
+  </section>
+  <!-- FACTURAS DE ACONDICIONAMIENTO -->
+  <section class="view" id="view-afact" role="tabpanel" aria-labelledby="tab-afact" hidden>
+    <p class="intro">Facturas de secado, zarandeo, paritaria y fumigación de cada acondicionadora, controladas contra su detalle (tickets de entrada). El costo por tonelada se calcula con lo que se paga de verdad: neto sin IVA y con el descuento aplicado.</p>
+    <div class="af-nav" id="afNav" role="group" aria-label="Secciones de facturas de acondicionamiento">
+      <button type="button" data-afv="res" aria-pressed="true">Resumen</button>
+      <button type="button" data-afv="fac" aria-pressed="false">Facturas</button>
+      <button type="button" data-afv="dup" aria-pressed="false">CTG duplicados</button>
+      <button type="button" data-afv="car" aria-pressed="false">Cargar</button>
+      <button type="button" data-afv="cfg" aria-pressed="false">Descuentos pactados</button>
+    </div>
+
+    <div class="af-filtros" id="afFiltros">
+      <select id="afEmp" aria-label="Empresa"></select>
+      <select id="afProv" aria-label="Acondicionadora"></select>
+      <select id="afEsp" aria-label="Grano"></select>
+    </div>
+
+    <div id="afv-res" class="af-res">
+      <section class="kpis k6" id="afKpis" aria-label="Números de acondicionamiento"></section>
+      <div class="af-avisos" id="afAvisosRes" hidden></div>
+      <section class="card" aria-labelledby="hAfTn">
+        <div class="card-head" style="padding-bottom:14px;border-bottom:1px solid var(--line)">
+          <h2 id="hAfTn">Costo por tonelada por acondicionadora</h2>
+          <div class="toolbar"><label class="chk"><input type="checkbox" id="afPorMes"> Separar por mes</label></div>
+        </div>
+        <div class="scroll"><table>
+          <thead><tr><th>Acondicionadora</th><th class="num">Toneladas</th><th class="num">Neto pagado</th><th class="num">$/TN neto</th><th class="num">$/TN sin descuento</th><th class="num">Descuento</th><th class="num">Pactado</th><th class="num">Paritaria $/TN</th><th class="num">Secado $/TN</th><th class="num">Humedad prom.</th><th class="num">Secado $/TN por punto</th><th class="num">Otros $/TN</th></tr></thead>
+          <tbody id="afTnBody"></tbody>
+        </table></div>
+        <p class="small muted" style="margin:0;padding:12px 16px 16px">En pesos y sin IVA. Las facturas en dólares se pasan a pesos con el tipo de cambio de cada factura. Toneladas = kg que entraron a la acondicionadora según el ticket. "Secado por punto" = lo que cobra por bajar un punto de humedad cada tonelada, sobre la humedad base que cargues en "Descuentos pactados".</p>
+      </section>
+      <div class="grid2">
+        <section class="card" aria-labelledby="hAfCon">
+          <div class="card-head"><h2 id="hAfCon">Gasto neto por concepto</h2><span class="sub">con el descuento repartido en cada concepto</span></div>
+          <div class="card-body"><div class="af-bars" id="afConBars"></div></div>
+        </section>
+        <section class="card" aria-labelledby="hAfDesc">
+          <div class="card-head"><h2 id="hAfDesc">Ahorro por descuentos</h2><span class="sub" id="afDescSub"></span></div>
+          <div class="card-body"><div class="af-bars" id="afDescBars"></div></div>
+        </section>
+      </div>
+      <section class="card" aria-labelledby="hAfMes">
+        <div class="card-head" style="padding-bottom:14px;border-bottom:1px solid var(--line)"><h2 id="hAfMes">Gasto neto por mes</h2><span class="sub">en pesos, sin IVA, por fecha de factura</span></div>
+        <div class="scroll"><table><thead id="afMesHead"></thead><tbody id="afMesBody"></tbody></table></div>
+      </section>
+    </div>
+
+    <div id="afv-fac" hidden>
+      <section class="card" aria-labelledby="hAfFac">
+        <div class="card-head" style="padding-bottom:14px;border-bottom:1px solid var(--line)">
+          <h2 id="hAfFac">Facturas cargadas</h2>
+          <div class="toolbar"><span class="count" id="afFacCount"></span>
+            <button class="btn" type="button" id="btnAfXls"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>Descargar Excel</button>
+          </div>
+        </div>
+        <div class="scroll tall"><table>
+          <thead><tr><th>Estado</th><th>Acondicionadora</th><th>Nº factura</th><th>Fecha</th><th>Empresa</th><th>Grano</th><th class="num">CTG</th><th class="num">Toneladas</th><th class="num">Neto</th><th class="num">Descuento</th><th class="num">Total</th><th>Moneda</th></tr></thead>
+          <tbody id="afFacBody"></tbody>
+        </table></div>
+      </section>
+    </div>
+
+    <div id="afv-dup" hidden>
+      <section class="card" aria-labelledby="hAfDup">
+        <div class="card-head" style="padding-bottom:14px;border-bottom:1px solid var(--line)"><h2 id="hAfDup">CTG cobrados más de una vez</h2><span class="sub">mismo CTG y mismo concepto en más de una factura</span></div>
+        <div class="scroll"><table>
+          <thead><tr><th>CTG</th><th>Concepto</th><th>Facturas</th><th class="num">Veces</th></tr></thead>
+          <tbody id="afDupBody"></tbody>
+        </table></div>
+      </section>
+    </div>
+
+    <div id="afv-car" hidden>
+      <section class="load" aria-label="Carga de facturas de acondicionamiento">
+        <div class="src-box">
+          <div class="src-head"><span class="step">1</span>
+            <div><h2>Factura y detalle</h2><p>Subí juntos el PDF de la factura y el de su detalle (tickets de entrada). La acondicionadora se reconoce sola. Hoy el lector conoce: <span id="afProvsTxt"></span>.</p></div>
+          </div>
+          <label class="drop" data-amode="pdf" for="fileAf">
+            <input type="file" id="fileAf" multiple accept=".pdf,application/pdf">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/></svg>
+            <strong>Arrastrá o elegí los PDF</strong>
+            <span>factura + detalle, .pdf</span>
+          </label>
+        </div>
+        <div class="src-box">
+          <div class="src-head"><span class="step">2</span>
+            <div><h2>Importar facturas del panel anterior</h2><p>El archivo .json con las facturas del Panel de Acondicionamiento. Se carga una sola vez; si una factura ya está, se reemplaza.</p></div>
+          </div>
+          <label class="drop" data-amode="json" for="fileAfJson">
+            <input type="file" id="fileAfJson" accept=".json,application/json">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="m7 8 5-5 5 5"/><path d="M4 15v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4"/></svg>
+            <strong>Elegí el archivo de facturas</strong>
+            <span>.json</span>
+          </label>
+        </div>
+      </section>
+      <div id="afPrev" class="af-res"></div>
+    </div>
+
+    <div id="afv-cfg" hidden>
+      <div class="grid2">
+        <section class="card af-cfg" aria-labelledby="hAfPac">
+          <div class="card-head" style="padding-bottom:14px;border-bottom:1px solid var(--line)"><h2 id="hAfPac">Descuento pactado por acondicionadora</h2><span class="sub">si una factura trae otro descuento, se marca para revisar</span></div>
+          <div class="scroll"><table><thead><tr><th>Acondicionadora</th><th class="num">Descuento pactado %</th></tr></thead><tbody id="afPacBody"></tbody></table></div>
+        </section>
+        <section class="card af-cfg" aria-labelledby="hAfBase">
+          <div class="card-head" style="padding-bottom:14px;border-bottom:1px solid var(--line)"><h2 id="hAfBase">Humedad base del secado por grano</h2><span class="sub">desde qué humedad se cobra secado; sirve para el secado por punto</span></div>
+          <div class="scroll"><table><thead><tr><th>Grano</th><th class="num">Humedad base %</th></tr></thead><tbody id="afBaseBody"></tbody></table></div>
+        </section>
+      </div>
+      <div class="load-actions"><span class="small muted">Dejá vacío lo que no sepas: no se inventa ningún valor.</span><button class="btn primary" type="button" id="btnAfCfg">Guardar</button></div>
+    </div>
   </section>
 </main>
 
@@ -2945,7 +3093,7 @@
   function rebuild(){
     state.rows = []; state.pend = []; state.files = [];
     fact = {cert:[], fac:[], files:[]};
-    cpes = [];
+    cpes = []; afFacts = []; afCfg = {pactos:{}, bases:{}};
     Array.from(archivos.entries()).map(function(e){ return Object.assign({id:e[0]}, e[1]); })
       .sort(function(a, b){ return (a.orden || 0) - (b.orden || 0); })
       .forEach(function(a){
@@ -2964,8 +3112,10 @@
         }
         else if (a.tipo === "cert" || a.tipo === "fac") addFact(a.tipo, filas, a.nombre, doc);
         else if (a.tipo === "cpe") cpes.unshift({id:a.id, nombre:a.nombre, m:meta, por:doc.por, en:doc.en});
+        else if (a.tipo === "acf" && meta.f) afFacts.push(Object.assign({}, meta.f, {id:a.id, por:doc.por, en:doc.en}));
+        else if (a.tipo === "acfcfg") afCfg = {pactos:meta.pactos || {}, bases:meta.bases || {}};
       });
-    render(); factRender(); acondRender();
+    render(); factRender(); acondRender(); afRender();
   }
   function puedeEscribir(){
     if (!db || !usuario){ toast("Entrá con tu cuenta de Google para cargar archivos."); return false; }
@@ -3232,8 +3382,554 @@
     toast("Se vació la pendiente acondicionadora");
   });
 
+  /* ---------- lector de facturas de acondicionamiento ---------- */
+  // Cada PDF se pasa a renglones de texto; cada página se reconoce como factura o como detalle (ticket de entrada)
+  // y se lee con las reglas de la acondicionadora que la emitió. Después se juntan factura y detalle por CTG.
+  // Montos argentinos: 1.859.988,00 → 1859988
+  function afNum(s){
+    if (s == null) return null;
+    s = String(s).replace(/[$\s]/g, "");
+    if (!s) return null;
+    if (s.indexOf(",") >= 0) s = s.replace(/\./g, "").replace(",", ".");
+    else if (/^\d{1,3}(\.\d{3})+$/.test(s)) s = s.replace(/\./g, "");
+    var n = parseFloat(s);
+    return isFinite(n) ? n : null;
+  }
+  // d/m/aaaa → aaaa-mm-dd
+  function afFecha(s){
+    var m = /(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(s || "");
+    return m ? m[3] + "-" + m[2].padStart(2, "0") + "-" + m[1].padStart(2, "0") : "";
+  }
+  // El mismo CTG viene con o sin el 0 de adelante según el papel: se guarda siempre con 11 dígitos
+  function afCtg(s){
+    s = String(s || "").replace(/\D/g, "");
+    return s.length === 12 && s[0] === "0" ? s.slice(1) : s;
+  }
+  function afBusca(re, txt, grupo){ var m = re.exec(txt); return m ? m[grupo || 1].trim() : ""; }
+  var AF_CONCEPTOS = ["paritaria", "secado", "zarandeo", "fumigacion", "mezcla", "bactericida"];
+  var AF_CONCEPTO_TXT = {paritaria:"Paritaria", secado:"Secado", zarandeo:"Zarandeo", fumigacion:"Fumigación", mezcla:"Mezcla", bactericida:"Bactericida"};
+  // Empresas del grupo que reciben las facturas
+  var AF_EMPRESAS = [
+    {nombre:"Economart S.R.L.", test:/economart/i},
+    {nombre:"Administración Enrique Duhau", test:/duhau/i}
+  ];
+  function afEmpresa(txt){
+    for (var i = 0; i < AF_EMPRESAS.length; i++) if (AF_EMPRESAS[i].test.test(txt)) return AF_EMPRESAS[i].nombre;
+    return "";
+  }
+  // Reglas por acondicionadora. test: reconoce al emisor; factura/ticket: leen una página ya pasada a texto.
+  var AF_PROVS = [
+    {
+      id:"donfernando", nombre:"AgroCereales Don Fernando SRL", corto:"Don Fernando",
+      test:/don\s*fernando|30-?70827070-?5/i,
+      esFactura:function(t){ return /Comprobante\s+Nro/i.test(t) && /Subtotal/i.test(t); },
+      esTicket:function(t){ return /Ticket\s+entrada|Nro\.?\s*Ticket/i.test(t); },
+      factura:function(t){
+        var f = {
+          numero:afBusca(/Comprobante\s+Nro\.?:?\s*(\d{4,5}-\d{8})/i, t),
+          fecha:afFecha(afBusca(/\bFecha:\s*(\d{1,2}\/\d{1,2}\/\d{4})/i, t)),
+          vencimiento:afFecha(afBusca(/Vencimiento[^:\n]*:\s*(\d{1,2}\/\d{1,2}\/\d{4})/i, t)),
+          empresa:afEmpresa(afBusca(/Sr\.?\(s\):\s*(.+)/i, t)),
+          especie:afBusca(/Especie:\s*(.+)/i, t),
+          referencia:afBusca(/Referencia:\s*(\S+)/i, t),
+          moneda:/U\$S|USD|d[oó]lar/i.test(t) ? "USD" : "ARS",
+          lineas:[]
+        };
+        var re = /CP\s*(\d+)\s*-\s*(\d+)\s+\S+\s+CTG\s*(\d{11,12})\s+([\d.,]+)\s+([\d.,]+)\s+([\d.,]+)/gi, m;
+        while ((m = re.exec(t))) f.lineas.push({cp:m[1].padStart(5, "0") + "-" + m[2].padStart(8, "0"), ctg:afCtg(m[3]), importe:afNum(m[6])});
+        f.subtotal = afNum(afBusca(/^\s*Subtotal\s+([\d.,]+)\s*$/im, t));
+        var d = /Descuento\s+([\d.,]+)\s*%\s+([\d.,]+)/i.exec(t);
+        f.descPct = d ? afNum(d[1]) : 0;
+        f.descMonto = d ? afNum(d[2]) : 0;
+        f.neto = afNum(afBusca(/Subtotal\s+Neto\s+([\d.,]+)/i, t));
+        // "IVA 21% 21% 292.948,11": el monto es el último número del renglón
+        var iva = 0, ri = /^\s*IVA\b.*?([\d.]+,\d{2})\s*$/gim, mi;
+        while ((mi = ri.exec(t))) iva += afNum(mi[1]);
+        f.iva = iva;
+        f.total = afNum(afBusca(/Total:\s*([\d.,]+)/i, t));
+        return f;
+      },
+      ticket:function(t){
+        var costo = function(rot){ return afNum(afBusca(new RegExp(rot + "\\s*\\$\\s*([\\d.,]+)", "i"), t)) || 0; };
+        var k = {
+          ticket:afBusca(/Nro\.?\s*Ticket\s+(\d+)/i, t),
+          fecha:afFecha(afBusca(/Ticket\s+\d+\s+Fecha\s+(\d{1,2}\/\d{1,2}\/\d{4})/i, t)),
+          cp:afBusca(/Carta\s+de\s+porte\s+(\d{5}-\d{8})/i, t),
+          ctg:afCtg(afBusca(/\bCTG\s+(\d{11,12})/i, t)),
+          especie:afBusca(/^\s*Especie\s+(.+)$/im, t),
+          kgBruto:afNum(afBusca(/^\s*Bruto\s+(\d+)/im, t)),
+          kgTara:afNum(afBusca(/^\s*Tara\s+(\d+)/im, t)),
+          kgNeto:afNum(afBusca(/^\s*Neto\s+(\d+)/im, t)),
+          hum:afNum(afBusca(/^\s*Humedad\s+([\d.,]+)/im, t)),
+          mermaHumKg:afNum(afBusca(/^\s*Humedad\s+[\d.,]+\s+(\d+)/im, t)),
+          kgFinal:afNum(afBusca(/Peso\s+neto\s+(\d+)/i, t)),
+          conceptos:{paritaria:costo("Paritaria"), secado:costo("Secada"), zarandeo:costo("Zaranda"), fumigacion:costo("Fumigaci[oó]n"), mezcla:costo("Mezcla"), bactericida:costo("Bactericida")}
+        };
+        k.total = AF_CONCEPTOS.reduce(function(s, c){ return s + k.conceptos[c]; }, 0);
+        return k;
+      }
+    },
+    // Todavía sin lector: se reconocen para agrupar las facturas importadas y avisar al cargar un PDF
+    {id:"vittori", nombre:"Vittori Cereales SRL", corto:"Vittori", test:/vittori/i},
+    {id:"florencia", nombre:"Florencia Cereales SRL", corto:"Florencia", test:/florencia\s+cereales/i},
+    {id:"seac", nombre:"SEAC SRL", corto:"SEAC", test:/\bSEAC\b/i},
+    {id:"bahia", nombre:"Acondicionadora Cereales Bahia SA", corto:"Cereales Bahía", test:/cereales\s+bah[ií]a/i},
+    {id:"agroworld", nombre:"Agro World", corto:"Agro World", test:/agro\s*world/i}
+  ];
+  function afConLector(){ return AF_PROVS.filter(function(p){ return p.factura; }).map(function(p){ return p.corto; }).join(", "); }
+  function afProv(id){ for (var i = 0; i < AF_PROVS.length; i++) if (AF_PROVS[i].id === id) return AF_PROVS[i]; return null; }
+  function afProvPorNombre(n){
+    for (var i = 0; i < AF_PROVS.length; i++) if (AF_PROVS[i].nombre === n || AF_PROVS[i].test.test(n || "")) return AF_PROVS[i];
+    return null;
+  }
+  // docs: [{nombre, paginas:[texto de cada página]}] → {facturas, tickets, avisos}
+  function afLeer(docs){
+    var out = {facturas:[], tickets:[], avisos:[]};
+    docs.forEach(function(d){
+      d.paginas.forEach(function(t, i){
+        var p = null;
+        for (var j = 0; j < AF_PROVS.length; j++) if (AF_PROVS[j].test.test(t)){ p = AF_PROVS[j]; break; }
+        var donde = d.nombre + (d.paginas.length > 1 ? " (hoja " + (i + 1) + ")" : "");
+        if (!p){ out.avisos.push(donde + ": no reconozco la acondicionadora. Por ahora el lector conoce: " + afConLector() + "."); return; }
+        if (!p.factura){ out.avisos.push(donde + ": es de " + p.corto + ", pero todavía no sé leer sus facturas. Por ahora cargala desde el panel anterior."); return; }
+        if (p.esFactura(t)){ var f = p.factura(t); f.prov = p.id; f.archivo = d.nombre; out.facturas.push(f); }
+        else if (p.esTicket(t)){ var k = p.ticket(t); k.prov = p.id; k.archivo = d.nombre; out.tickets.push(k); }
+        else out.avisos.push(donde + ": es de " + p.corto + " pero no parece ni una factura ni un ticket de entrada.");
+      });
+    });
+    return out;
+  }
+  // Junta cada factura con los tickets de sus CTG y controla que todo cierre
+  function afArmar(leido){
+    var usados = {};
+    var res = leido.facturas.map(function(f){
+      var p = afProv(f.prov), ctgs = [], ch = [];
+      var ok = function(cond, txt){ ch.push({ok:!!cond, txt:txt}); };
+      f.lineas.forEach(function(l){
+        var k = null;
+        leido.tickets.forEach(function(x){ if (x.prov === f.prov && x.ctg === l.ctg) k = x; });
+        if (k) usados[k.ctg] = true;
+        ctgs.push({ctg:l.ctg, cp:l.cp || (k && k.cp) || "", importe:l.importe, ticket:k ? k.ticket : "", fecha:k ? k.fecha : "",
+          kgBruto:k ? k.kgBruto : null, kgTara:k ? k.kgTara : null, kgNeto:k ? k.kgNeto : null, hum:k ? k.hum : null,
+          mermaHumKg:k ? k.mermaHumKg : null, kgFinal:k ? k.kgFinal : null, conceptos:k ? k.conceptos : null});
+        if (!k) ok(false, "CTG " + l.ctg + ": falta su ticket de entrada en el detalle (sin el ticket no hay desglose ni toneladas)");
+        else ok(Math.abs(k.total - l.importe) <= 1, "CTG " + l.ctg + ": el ticket suma $ " + afMoney(k.total) + " y la factura cobra $ " + afMoney(l.importe));
+      });
+      var suma = f.lineas.reduce(function(s, l){ return s + (l.importe || 0); }, 0);
+      ok(f.lineas.length > 0, f.lineas.length ? f.lineas.length + " CTG en la factura" : "No encontré renglones con CTG en la factura");
+      ok(f.subtotal != null && Math.abs(suma - f.subtotal) <= 1, "Los renglones suman $ " + afMoney(suma) + " y el subtotal dice $ " + afMoney(f.subtotal));
+      if (f.descPct) ok(Math.abs(f.subtotal * f.descPct / 100 - f.descMonto) <= 1, "Descuento " + afPct(f.descPct) + " sobre el subtotal: $ " + afMoney(f.descMonto));
+      ok(f.neto != null && Math.abs((f.subtotal || 0) - (f.descMonto || 0) - f.neto) <= 1, "Subtotal menos descuento da el neto: $ " + afMoney(f.neto));
+      ok(f.neto != null && Math.abs(f.neto * 0.21 - f.iva) <= 1, "IVA 21 % del neto: $ " + afMoney(f.iva));
+      ok(f.total != null && Math.abs((f.neto || 0) + (f.iva || 0) - f.total) <= 1, "Neto más IVA da el total: $ " + afMoney(f.total));
+      return {prov:f.prov, proveedor:p.nombre, numero:f.numero, fecha:f.fecha, vencimiento:f.vencimiento, empresa:f.empresa,
+        especie:afEspecie(f.especie || (leido.tickets.filter(function(k){ return k.prov === f.prov && k.especie; })[0] || {}).especie),
+        moneda:f.moneda, tc:null, referencia:f.referencia, subtotal:f.subtotal, descPct:f.descPct || 0, descMonto:f.descMonto || 0,
+        neto:f.neto, iva:f.iva, total:f.total, ctgs:ctgs, checks:ch, validada:ch.every(function(c){ return c.ok; }),
+        archivos:[f.archivo].concat(leido.tickets.filter(function(k){ return f.lineas.some(function(l){ return l.ctg === k.ctg; }); }).map(function(k){ return k.archivo; }))
+          .filter(function(a, i, arr){ return arr.indexOf(a) === i; })};
+    });
+    var sueltos = leido.tickets.filter(function(k){ return !usados[k.ctg]; });
+    return {facturas:res, sueltos:sueltos, avisos:leido.avisos.concat(sueltos.map(function(k){
+      return "El ticket " + k.ticket + " (CTG " + k.ctg + ") no está en ninguna de las facturas cargadas.";
+    })).concat(!res.length && leido.tickets.length ? ["Cargaste el detalle pero falta la factura."] : [])};
+  }
+  // "TRIGO PAN 2627" → "Trigo pan"
+  function afEspecie(s){
+    s = String(s || "").replace(/\s+\d{4}\s*$/, "").replace(/[^A-Za-zÁÉÍÓÚÑáéíóúñ ]/g, " ").replace(/\s+/g, " ").trim().toLowerCase();
+    return s ? s[0].toUpperCase() + s.slice(1) : "";
+  }
+  function afMoney(n){ return n == null ? "–" : new Intl.NumberFormat("es-AR", {minimumFractionDigits:2, maximumFractionDigits:2}).format(n); }
+  function afPct(n){ return n == null ? "–" : String(Math.round(n * 100) / 100).replace(".", ",") + " %"; }
+
+  /* ---------- pestaña Facturas de acondicionamiento ---------- */
+  // Cada factura es un documento de "archivos" con tipo "acf" y los datos en meta.f.
+  // Los descuentos pactados y las humedades base van en un documento tipo "acfcfg" (meta.pactos, meta.bases).
+  var afFacts = [], afCfg = {pactos:{}, bases:{}}, afVista = "res", afAbierta = null, afPrev = null, afBorrar = null;
+  function afTn(n){ return n == null ? "–" : (Math.round(n * 10) / 10).toFixed(1).replace(".", ","); }
+  function afPesos(n){ return n == null ? "–" : "$ " + big(n); }
+  // Cuentas de una factura, en pesos. El descuento se reparte en cada CTG y concepto en proporción (factor = neto / bruto).
+  function afCalc(f){
+    var tc = f.moneda === "USD" ? (f.tc || null) : 1;
+    var neto = f.neto, estimado = false;
+    if (neto == null && f.subtotal != null) neto = f.subtotal - (f.descMonto || (f.descPct ? f.subtotal * f.descPct / 100 : 0));
+    if (neto == null && f.iva != null && f.total != null) neto = f.total - f.iva;
+    if (neto == null && f.total != null){ neto = f.total / 1.21; estimado = true; }
+    var avEst = estimado ? ["no trae el neto: se calculó como total ÷ 1,21 (IVA 21 %)"] : [];
+    var lineas = (f.ctgs || []).reduce(function(s, c){ return s + (c.importe || 0); }, 0);
+    var bruto = f.subtotal != null ? f.subtotal : f.descPct ? neto / (1 - f.descPct / 100) : lineas || neto;
+    var factor = bruto > 0 && neto != null ? neto / bruto : 1;
+    var r = {tc:tc, estimado:estimado, neto:neto, bruto:bruto, factor:factor, descPct:bruto > 0 && neto != null ? Math.max(0, (1 - neto / bruto) * 100) : 0,
+      tn:0, tnDes:0, netoTn:0, brutoTn:0, con:{}, sinDes:0, hum:[], avisos:avEst};
+    AF_CONCEPTOS.forEach(function(c){ r.con[c] = 0; });
+    if (tc == null){ r.avisos.push("está en dólares y no tiene tipo de cambio: queda afuera de los totales en pesos"); return r; }
+    r.netoPesos = neto * tc; r.brutoPesos = bruto * tc; r.totalPesos = (f.total || 0) * tc; r.descPesos = Math.max(0, r.brutoPesos - r.netoPesos);
+    var cs = f.ctgs || [];
+    if (!cs.length){
+      r.sinDes = r.netoPesos;
+      if (f.toneladas){ r.tn = f.toneladas; r.netoTn = r.netoPesos; r.brutoTn = r.brutoPesos; }
+      else r.avisos.push("no tiene toneladas: no entra en el costo por tonelada");
+      return r;
+    }
+    var faltan = 0;
+    cs.forEach(function(c){
+      var tn = c.kgNeto ? c.kgNeto / 1000 : (c.tn || null), imp = (c.importe || 0) * tc;
+      if (c.conceptos){
+        AF_CONCEPTOS.forEach(function(k){ r.con[k] += (c.conceptos[k] || 0) * tc * factor; });
+        if (tn){ r.tnDes += tn; }
+      } else r.sinDes += imp * factor;
+      if (tn){
+        r.tn += tn; r.netoTn += imp * factor; r.brutoTn += imp;
+        if (c.hum != null) r.hum.push({hum:c.hum, tn:tn, sec:c.conceptos ? (c.conceptos.secado || 0) * tc * factor : 0});
+      } else faltan++;
+    });
+    if (faltan) r.avisos.push(faltan + (faltan === 1 ? " CTG sin toneladas" : " CTG sin toneladas") + ": no entra" + (faltan === 1 ? "" : "n") + " en el costo por tonelada");
+    return r;
+  }
+  function afPactado(f){ var v = afCfg.pactos[f.prov || f.proveedor]; return v == null || v === "" ? null : +v; }
+  // Estado de una factura para la lista: validada, para revisar o con descuento distinto al pactado
+  function afEstado(f, c){
+    var pac = afPactado(f);
+    if (pac != null && Math.abs(c.descPct - pac) > 0.05) return {cls:"bad", txt:"Descuento distinto al pactado"};
+    if (!f.validada) return {cls:"warn", txt:"Revisar"};
+    if (c.avisos.length) return {cls:"warn", txt:"Incompleta"};
+    return {cls:"ok", txt:"Validada"};
+  }
+  function afFiltradas(){
+    var e = $("#afEmp").value, p = $("#afProv").value, g = $("#afEsp").value;
+    return afFacts.filter(function(f){ return (!e || f.empresa === e) && (!p || f.proveedor === p) && (!g || f.especie === g); });
+  }
+  function afOpciones(sel, todos, vals){
+    var v = sel.value;
+    sel.innerHTML = '<option value="">' + todos + "</option>" + vals.map(function(x){ return '<option value="' + esc(x) + '">' + esc(x) + "</option>"; }).join("");
+    sel.value = vals.indexOf(v) >= 0 ? v : "";
+  }
+  function afUnicos(k){ return afFacts.map(function(f){ return f[k]; }).filter(function(x, i, a){ return x && a.indexOf(x) === i; }).sort(); }
+  function afRender(){
+    afOpciones($("#afEmp"), "Todas las empresas", afUnicos("empresa"));
+    afOpciones($("#afProv"), "Todas las acondicionadoras", afUnicos("proveedor"));
+    afOpciones($("#afEsp"), "Todos los granos", afUnicos("especie"));
+    $("#afProvsTxt").textContent = afConLector();
+    var lista = afFiltradas().map(function(f){ return {f:f, c:afCalc(f)}; });
+    var rev = afFacts.filter(function(f){ return afEstado(f, afCalc(f)).cls !== "ok"; }).length;
+    $("#bdgAfact").textContent = rev ? String(rev) : "";
+    $("#afFiltros").hidden = afVista === "car" || afVista === "cfg";
+    afResumen(lista); afLista(lista); afDups(lista); afCfgRender();
+  }
+  function afResumen(lista){
+    var t = {neto:0, total:0, tn:0, netoTn:0, desc:0, bruto:0, ok:0}, avisos = [];
+    lista.forEach(function(x){
+      if (afEstado(x.f, x.c).cls === "ok") t.ok++;
+      x.c.avisos.forEach(function(a){ avisos.push(x.f.proveedor + " " + x.f.numero + ": " + a); });
+      if (x.c.tc == null) return;
+      t.neto += x.c.netoPesos; t.total += x.c.totalPesos; t.tn += x.c.tn; t.netoTn += x.c.netoTn; t.desc += x.c.descPesos; t.bruto += x.c.brutoPesos;
+    });
+    var kpi = function(cls, l, v, s){ return '<div class="kpi ' + cls + '"><span class="kpi-label">' + l + '</span><span class="kpi-value">' + v + '</span><span class="kpi-sub">' + s + "</span></div>"; };
+    $("#afKpis").innerHTML =
+      kpi("hl", "Costo neto por tonelada", t.tn ? afPesos(t.netoTn / t.tn) : "–", "con descuento y sin IVA") +
+      kpi("", "Gasto neto", afPesos(t.neto), "sin IVA, con descuento") +
+      kpi("", "Total facturado", afPesos(t.total), "con IVA") +
+      kpi("", "Toneladas", afTn(t.tn), "entradas a acondicionar") +
+      kpi("", "Ahorro por descuentos", afPesos(t.desc), t.bruto ? afPct(t.desc / t.bruto * 100) + " de la tarifa sin descuento" : "–") +
+      kpi("", "Facturas validadas", t.ok + " de " + lista.length, lista.length - t.ok ? (lista.length - t.ok) + " para revisar" : "todo en orden");
+    $("#afAvisosRes").hidden = !avisos.length;
+    $("#afAvisosRes").innerHTML = avisos.length ? "<strong>Quedan afuera de alguna cuenta:</strong>" + avisos.map(function(a){ return "<div>" + esc(a) + "</div>"; }).join("") : "";
+    // Costo por tonelada, por acondicionadora (y por mes si se pide)
+    var porMes = $("#afPorMes").checked, g = new Map();
+    lista.forEach(function(x){
+      if (x.c.tc == null) return;
+      var key = (porMes ? (x.f.fecha || "").slice(0, 7) + "|" : "") + x.f.proveedor;
+      if (!g.has(key)) g.set(key, {mes:porMes ? (x.f.fecha || "").slice(0, 7) : "", prov:x.f.proveedor, provId:x.f.prov || x.f.proveedor, tn:0, tnDes:0, neto:0, bruto:0, con:{}, humW:0, humTn:0, secB:0, pts:0, pacs:[]});
+      var a = g.get(key);
+      a.tn += x.c.tn; a.tnDes += x.c.tnDes; a.neto += x.c.netoTn; a.bruto += x.c.brutoTn;
+      AF_CONCEPTOS.forEach(function(k){ a.con[k] = (a.con[k] || 0) + (x.c.tnDes ? x.c.con[k] : 0); });
+      var base = afCfg.bases[x.f.especie];
+      x.c.hum.forEach(function(h){
+        a.humW += h.hum * h.tn; a.humTn += h.tn;
+        if (base != null && base !== "" && h.hum > +base){ a.secB += h.sec; a.pts += h.tn * (h.hum - base); }
+      });
+    });
+    var filas = Array.from(g.values()).sort(function(a, b){ return a.mes.localeCompare(b.mes) || a.prov.localeCompare(b.prov); });
+    $("#afTnBody").innerHTML = filas.length ? filas.map(function(a){
+      var pt = function(v, tn){ return tn ? afPesos(v / tn) : "–"; }, pac = afCfg.pactos[a.provId];
+      var otros = (a.con.zarandeo || 0) + (a.con.fumigacion || 0) + (a.con.mezcla || 0) + (a.con.bactericida || 0);
+      return "<tr><td>" + (a.mes ? '<span class="muted">' + a.mes.split("-").reverse().join("/") + "</span> " : "") + esc(a.prov) + '</td><td class="num">' + afTn(a.tn) +
+        '</td><td class="num">' + afPesos(a.neto) + '</td><td class="num"><b>' + pt(a.neto, a.tn) + '</b></td><td class="num">' + pt(a.bruto, a.tn) +
+        '</td><td class="num">' + (a.bruto ? afPct((1 - a.neto / a.bruto) * 100) : "–") + '</td><td class="num">' + (pac == null || pac === "" ? "–" : afPct(+pac)) +
+        '</td><td class="num">' + pt(a.con.paritaria || 0, a.tnDes) + '</td><td class="num">' + pt(a.con.secado || 0, a.tnDes) +
+        '</td><td class="num">' + (a.humTn ? afPct(a.humW / a.humTn) : "–") + '</td><td class="num">' + (a.pts ? afPesos(a.secB / a.pts) : "–") +
+        '</td><td class="num">' + pt(otros, a.tnDes) + "</td></tr>";
+    }).join("") : '<tr class="empty"><td colspan="12">Todavía no hay facturas. Cargalas en "Cargar".</td></tr>';
+    // Gasto por concepto
+    var con = {}, sinDes = 0;
+    lista.forEach(function(x){ if (x.c.tc == null) return; AF_CONCEPTOS.forEach(function(k){ con[k] = (con[k] || 0) + x.c.con[k]; }); sinDes += x.c.sinDes; });
+    var items = AF_CONCEPTOS.map(function(k){ return {l:AF_CONCEPTO_TXT[k], v:con[k] || 0}; }).concat([{l:"Sin desglose", v:sinDes}]).filter(function(i){ return i.v > 0.5; });
+    var tot = items.reduce(function(s, i){ return s + i.v; }, 0), max = Math.max.apply(null, items.map(function(i){ return i.v; }).concat([1]));
+    $("#afConBars").innerHTML = items.length ? items.sort(function(a, b){ return b.v - a.v; }).map(function(i){
+      return '<div class="af-bar"><span>' + i.l + '</span><span class="t"><span style="width:' + (i.v / max * 100) + '%"></span></span><span class="v"><b>' + afPesos(i.v) + "</b> · " + afPct(i.v / tot * 100) + "</span></div>";
+    }).join("") : '<p class="muted small" style="margin:0">Sin datos.</p>';
+    // Ahorro por descuentos, por acondicionadora
+    var d = new Map();
+    lista.forEach(function(x){
+      if (x.c.tc == null) return;
+      if (!d.has(x.f.proveedor)) d.set(x.f.proveedor, {desc:0, bruto:0, id:x.f.prov || x.f.proveedor});
+      var a = d.get(x.f.proveedor); a.desc += x.c.descPesos; a.bruto += x.c.brutoPesos;
+    });
+    var ds = Array.from(d.entries()).sort(function(a, b){ return b[1].desc - a[1].desc; }), dmax = Math.max.apply(null, ds.map(function(e){ return e[1].desc; }).concat([1]));
+    $("#afDescSub").textContent = t.bruto ? afPesos(t.desc) + " sobre " + afPesos(t.bruto) + " de tarifa sin descuento" : "";
+    $("#afDescBars").innerHTML = ds.length ? ds.map(function(e){
+      var pac = afCfg.pactos[e[1].id], pct = e[1].bruto ? e[1].desc / e[1].bruto * 100 : 0;
+      return '<div class="af-bar"><span>' + esc(e[0]) + '</span><span class="t"><span style="width:' + (e[1].desc / dmax * 100) + '%;background:var(--wheat)"></span></span><span class="v"><b>' + afPesos(e[1].desc) + "</b> · " + afPct(pct) +
+        (pac == null || pac === "" ? "" : " · pactado " + afPct(+pac)) + "</span></div>";
+    }).join("") : '<p class="muted small" style="margin:0">Sin datos.</p>';
+    // Gasto por mes
+    var provs = [], meses = new Map();
+    lista.forEach(function(x){
+      if (x.c.tc == null) return;
+      var m = (x.f.fecha || "").slice(0, 7) || "sin fecha";
+      if (provs.indexOf(x.f.proveedor) < 0) provs.push(x.f.proveedor);
+      if (!meses.has(m)) meses.set(m, {});
+      meses.get(m)[x.f.proveedor] = (meses.get(m)[x.f.proveedor] || 0) + x.c.netoPesos;
+    });
+    provs.sort();
+    $("#afMesHead").innerHTML = "<tr><th>Mes</th>" + provs.map(function(p){ return '<th class="num">' + esc(p) + "</th>"; }).join("") + '<th class="num">Total</th></tr>';
+    $("#afMesBody").innerHTML = meses.size ? Array.from(meses.keys()).sort().map(function(m){
+      var r = meses.get(m), s = 0;
+      return "<tr><td>" + (m === "sin fecha" ? m : m.split("-").reverse().join("/")) + "</td>" + provs.map(function(p){ s += r[p] || 0; return '<td class="num">' + (r[p] ? afPesos(r[p]) : "–") + "</td>"; }).join("") +
+        '<td class="num"><b>' + afPesos(s) + "</b></td></tr>";
+    }).join("") : '<tr class="empty"><td colspan="2">Sin datos.</td></tr>';
+  }
+  function afDetalle(f, c){
+    var cs = f.ctgs || [];
+    var h = '<div class="af-det-in"><ul class="af-checks">' + (f.checks || []).map(function(k){ return '<li class="' + (k.ok ? "ok" : "no") + '"><span class="m">' + (k.ok ? "✓" : "✗") + "</span>" + esc(k.txt) + "</li>"; }).join("");
+    var pac = afPactado(f);
+    if (pac != null) h += '<li class="' + (Math.abs(c.descPct - pac) <= 0.05 ? "ok" : "no") + '"><span class="m">' + (Math.abs(c.descPct - pac) <= 0.05 ? "✓" : "✗") + "</span>Descuento de la factura " + afPct(c.descPct) + ", pactado " + afPct(pac) + "</li>";
+    c.avisos.forEach(function(a){ h += '<li class="no"><span class="m">!</span>' + esc(a) + "</li>"; });
+    h += "</ul>";
+    if (cs.length) h += '<div class="scroll"><table><thead><tr><th>CTG</th><th>Carta de porte</th><th>Ticket</th><th class="num">Kg entrados</th><th class="num">Humedad</th>' +
+      AF_CONCEPTOS.map(function(k){ return '<th class="num">' + AF_CONCEPTO_TXT[k] + "</th>"; }).join("") + '<th class="num">Importe</th><th class="num">$/TN neto</th></tr></thead><tbody>' +
+      cs.map(function(x){
+        var tn = x.kgNeto ? x.kgNeto / 1000 : x.tn;
+        return '<tr><td class="code">' + esc(x.ctg) + '</td><td class="code">' + esc(x.cp || "–") + "</td><td>" + esc(x.ticket || "–") + '</td><td class="num">' + (x.kgNeto != null ? x.kgNeto : tn ? Math.round(tn * 1000) : "–") +
+          '</td><td class="num">' + (x.hum != null ? afPct(x.hum) : "–") + "</td>" +
+          AF_CONCEPTOS.map(function(k){ return '<td class="num">' + (x.conceptos ? afMoney(x.conceptos[k] || 0) : "–") + "</td>"; }).join("") +
+          '<td class="num">' + afMoney(x.importe) + '</td><td class="num">' + (tn && c.tc != null ? afPesos(x.importe * c.factor * c.tc / tn) : "–") + "</td></tr>";
+      }).join("") + "</tbody></table></div>";
+    h += '<div class="load-actions"><span class="small muted">' + esc([(f.archivos || []).join(", "), f.por ? "cargada por " + f.por.split("@")[0] : ""].filter(Boolean).join(" · ")) + "</span>" +
+      (f.id ? '<button class="btn' + (afBorrar === f.id ? " armed" : "") + '" type="button" data-afdel="' + f.id + '">' + (afBorrar === f.id ? "Confirmar: quitar factura" : "Quitar factura") + "</button>" : "") + "</div></div>";
+    return h;
+  }
+  function afLista(lista){
+    lista = lista.slice().sort(function(a, b){ return (b.f.fecha || "").localeCompare(a.f.fecha || ""); });
+    $("#afFacCount").textContent = lista.length + (lista.length === 1 ? " factura" : " facturas");
+    $("#afFacBody").innerHTML = lista.length ? lista.map(function(x){
+      var f = x.f, c = x.c, e = afEstado(f, c), ab = afAbierta === f.id;
+      return '<tr class="af-row' + (e.cls === "ok" ? "" : " " + (e.cls === "bad" ? "bad" : "warn")) + '" data-afopen="' + f.id + '" aria-expanded="' + ab + '"><td><span class="pill ' + e.cls + '">' + e.txt + "</span></td><td>" + esc(f.proveedor) +
+        '</td><td class="code">' + esc(f.numero) + "</td><td>" + (f.fecha ? f.fecha.split("-").reverse().join("/") : "–") + "</td><td>" + esc(f.empresa || "–") + "</td><td>" + esc(f.especie || "–") +
+        '</td><td class="num">' + (f.ctgs || []).length + '</td><td class="num">' + (c.tn ? afTn(c.tn) : "–") + '</td><td class="num">' + afMoney(c.neto) +
+        '</td><td class="num">' + afPct(c.descPct) + '</td><td class="num">' + afMoney(f.total) + "</td><td>" + esc(f.moneda) + (f.moneda === "USD" ? (f.tc ? " · TC " + afMoney(f.tc) : " · sin TC") : "") + "</td></tr>" +
+        (ab ? '<tr class="af-det"><td colspan="12">' + afDetalle(f, c) + "</td></tr>" : "");
+    }).join("") : '<tr class="empty"><td colspan="12">Todavía no hay facturas. Cargalas en "Cargar".</td></tr>';
+  }
+  function afDups(lista){
+    var m = new Map();
+    lista.forEach(function(x){
+      (x.f.ctgs || []).forEach(function(c){
+        if (!c.conceptos) return;
+        AF_CONCEPTOS.forEach(function(k){
+          if (!(c.conceptos[k] > 0)) return;
+          var key = c.ctg + "|" + k;
+          if (!m.has(key)) m.set(key, []);
+          var l = m.get(key), n = x.f.proveedor + " " + x.f.numero;
+          if (l.indexOf(n) < 0) l.push(n);
+        });
+      });
+    });
+    var d = Array.from(m.entries()).filter(function(e){ return e[1].length > 1; });
+    $("#afDupBody").innerHTML = d.length ? d.map(function(e){
+      var k = e[0].split("|");
+      return '<tr class="bad"><td class="code">' + k[0] + "</td><td>" + AF_CONCEPTO_TXT[k[1]] + '</td><td style="white-space:normal">' + e[1].map(esc).join("<br>") + '</td><td class="num">' + e[1].length + "</td></tr>";
+    }).join("") : '<tr class="empty"><td colspan="4">No hay CTG cobrados dos veces por el mismo concepto.</td></tr>';
+  }
+  function afCfgRender(){
+    if (document.activeElement && document.activeElement.closest && document.activeElement.closest("#afv-cfg")) return; // no pisar lo que se está escribiendo
+    var provs = AF_PROVS.map(function(p){ return {id:p.id, n:p.nombre}; });
+    afFacts.forEach(function(f){ var id = f.prov || f.proveedor; if (!provs.some(function(p){ return p.id === id; })) provs.push({id:id, n:f.proveedor}); });
+    $("#afPacBody").innerHTML = provs.map(function(p){
+      var v = afCfg.pactos[p.id];
+      return "<tr><td>" + esc(p.n) + '</td><td class="num"><input type="text" inputmode="decimal" data-afpac="' + esc(p.id) + '" value="' + (v == null ? "" : String(v).replace(".", ",")) + '" aria-label="Descuento pactado ' + esc(p.n) + '"></td></tr>';
+    }).join("");
+    var esp = afUnicos("especie");
+    Object.keys(afCfg.bases).forEach(function(e){ if (esp.indexOf(e) < 0) esp.push(e); });
+    $("#afBaseBody").innerHTML = esp.length ? esp.map(function(e){
+      var v = afCfg.bases[e];
+      return "<tr><td>" + esc(e) + '</td><td class="num"><input type="text" inputmode="decimal" data-afbase="' + esc(e) + '" value="' + (v == null ? "" : String(v).replace(".", ",")) + '" aria-label="Humedad base ' + esc(e) + '"></td></tr>';
+    }).join("") : '<tr class="empty"><td colspan="2">Aparecen los granos de las facturas que cargues.</td></tr>';
+  }
+  function afVer(v){
+    afVista = v;
+    Array.prototype.forEach.call($("#afNav").children, function(b){ b.setAttribute("aria-pressed", String(b.getAttribute("data-afv") === v)); });
+    ["res", "fac", "dup", "car", "cfg"].forEach(function(k){ $("#afv-" + k).hidden = k !== v; });
+    $("#afFiltros").hidden = v === "car" || v === "cfg";
+  }
+  $("#afNav").addEventListener("click", function(e){ var b = e.target.closest("[data-afv]"); if (b) afVer(b.getAttribute("data-afv")); });
+  ["#afEmp", "#afProv", "#afEsp", "#afPorMes"].forEach(function(s){ $(s).addEventListener("change", afRender); });
+  $("#afFacBody").addEventListener("click", function(e){
+    var del = e.target.closest("[data-afdel]");
+    if (del){
+      var id = del.getAttribute("data-afdel");
+      if (afBorrar !== id){ afBorrar = id; afRender(); setTimeout(function(){ if (afBorrar === id){ afBorrar = null; afRender(); } }, 4000); return; }
+      afBorrar = null;
+      var f = afFacts.filter(function(x){ return x.id === id; })[0];
+      borrarArchivo(id, f ? f.proveedor + " " + f.numero : "factura");
+      return;
+    }
+    if (e.target.closest(".af-det")) return;
+    var r = e.target.closest("[data-afopen]"); if (!r) return;
+    var id2 = r.getAttribute("data-afopen");
+    afAbierta = afAbierta === id2 ? null : id2; afBorrar = null; afRender();
+  });
+
+  // Lee los PDF: cada hoja pasa a renglones de texto
+  function afPaginas(file){
+    return Promise.all([pdfLib(), file.arrayBuffer()]).then(function(x){ return x[0].getDocument({data:x[1]}).promise; }).then(function(doc){
+      var ps = [];
+      for (var i = 1; i <= doc.numPages; i++) ps.push(doc.getPage(i).then(function(pg){
+        return palabrasPdf(pg).then(function(ws){ return renglones(ws).map(function(l){ return l.t; }).join("\n"); });
+      }));
+      return Promise.all(ps);
+    });
+  }
+  function afArchivos(fileList){
+    var files = Array.prototype.filter.call(fileList, function(f){ return /\.pdf$/i.test(f.name); });
+    var jsons = Array.prototype.filter.call(fileList, function(f){ return /\.json$/i.test(f.name); });
+    if (jsons.length){ afImportar(jsons[0]); return; }
+    if (!files.length){ toast("Elegí los PDF de la factura y del detalle"); return; }
+    afVer("car");
+    $("#afPrev").innerHTML = '<p class="cpe-prog">Leyendo ' + files.length + (files.length === 1 ? " archivo…" : " archivos…") + "</p>";
+    Promise.all(files.map(function(f){
+      return afPaginas(f).then(function(p){ return {nombre:f.name, paginas:p}; }, function(e){ return {nombre:f.name, paginas:[], error:e && e.message ? e.message : "no se pudo abrir"}; });
+    })).then(function(docs){
+      var res = afArmar(afLeer(docs.filter(function(d){ return !d.error; })));
+      docs.forEach(function(d){
+        if (d.error) res.avisos.unshift(d.nombre + ": " + d.error);
+        else if (d.paginas.join("").replace(/\s/g, "").length < 50) res.avisos.unshift(d.nombre + ": el PDF no trae texto (parece escaneado). Pedile a la acondicionadora el PDF original.");
+      });
+      afPrev = {facturas:res.facturas, avisos:res.avisos, origen:"pdf"};
+      afPrevRender();
+    });
+  }
+  // Facturas del Panel de Acondicionamiento anterior (formato viejo) → formato de esta pestaña
+  function afDesdePanel(o){
+    var p = afProvPorNombre(o.proveedor);
+    var ctgs = (o.ctgs || []).map(function(c){
+      var con = {};
+      AF_CONCEPTOS.forEach(function(k){ con[k] = 0; });
+      if (Array.isArray(c.conceptos)) c.conceptos.forEach(function(x){
+        var n = String(x.nombre || "").toLowerCase();
+        var k = /secad/.test(n) ? "secado" : /zaran/.test(n) ? "zarandeo" : /pari/.test(n) ? "paritaria" : /fum/.test(n) ? "fumigacion" : /mez/.test(n) ? "mezcla" : /bact/.test(n) ? "bactericida" : null;
+        if (k) con[k] += +x.monto || 0;
+      });
+      else { con.paritaria = +c.paritaria || 0; con.secado = +c.secada || 0; con.zarandeo = +c.zaranda || 0; con.fumigacion = +c.fumigacion || 0; con.mezcla = +c.mezcla || 0; con.bactericida = +c.bactericida || 0; }
+      var tn = c.toneladas != null && c.toneladas !== "" ? +c.toneladas : null;
+      return {ctg:afCtg(c.id), cp:"", importe:+c.total || AF_CONCEPTOS.reduce(function(s, k){ return s + con[k]; }, 0), ticket:"", fecha:"",
+        kgNeto:tn ? Math.round(tn * 1000) : null, hum:c.humedad ? +c.humedad : null, conceptos:con};
+    });
+    var f = {prov:p ? p.id : o.proveedor, proveedor:p ? p.nombre : o.proveedor, numero:o.numero || "", fecha:o.fecha || "", vencimiento:o.vencimiento || "",
+      empresa:o.empresa || "", especie:afEspecie(o.especie), moneda:o.moneda === "USD" ? "USD" : "ARS", tc:o.tcBna || o.tcFactura || null,
+      subtotal:o.subtotal != null ? +o.subtotal : null, descPct:+o.descuentoPct || 0, descMonto:+o.descuentoMonto || 0,
+      neto:o.subtotalNeto != null ? +o.subtotalNeto : null, iva:o.iva != null ? +o.iva : null, total:o.total != null ? +o.total : null,
+      toneladas:o.toneladas ? +o.toneladas : null, ctgs:ctgs, archivos:["Panel de Acondicionamiento"], origen:"panel",
+      checks:[{ok:!!o.validado, txt:o.validado ? "Validada en el Panel de Acondicionamiento" : "En el Panel de Acondicionamiento no estaba validada"}], validada:!!o.validado};
+    if (f.descPct && !f.descMonto && f.subtotal != null) f.descMonto = Math.round(f.subtotal * f.descPct) / 100;
+    if (!ctgs.length && !f.subtotal) f.checks.push({ok:true, txt:"La factura no trae desglose por CTG: se usa el total"});
+    return f;
+  }
+  function afImportar(file){
+    afVer("car");
+    file.text().then(function(t){
+      var d = JSON.parse(t), arr = Array.isArray(d) ? d : d && Array.isArray(d.facturas) ? d.facturas : null;
+      if (!arr) throw new Error("no es un archivo de facturas");
+      afPrev = {facturas:arr.map(afDesdePanel), avisos:[], origen:"json"};
+      afPrevRender();
+    }).catch(function(e){ toast("No se pudo leer el archivo: " + (e && e.message ? e.message : "formato desconocido"), 5000); });
+  }
+  function afExiste(f){ return afFacts.filter(function(x){ return (x.prov || x.proveedor) === (f.prov || f.proveedor) && x.numero === f.numero; })[0] || null; }
+  function afPrevRender(){
+    var p = afPrev;
+    if (!p){ $("#afPrev").innerHTML = ""; return; }
+    var h = p.avisos.length ? '<div class="af-avisos">' + p.avisos.map(function(a){ return "<div>" + esc(a) + "</div>"; }).join("") + "</div>" : "";
+    p.facturas.forEach(function(f){
+      var c = afCalc(f), ya = afExiste(f), e = afEstado(f, c);
+      h += '<section class="card"><div class="card-head" style="padding-bottom:12px;border-bottom:1px solid var(--line)"><h2>' + esc(f.proveedor) + " · " + esc(f.numero) +
+        ' <span class="pill ' + e.cls + '">' + e.txt + "</span>" + (ya ? ' <span class="pill mute">Ya está cargada: se reemplaza</span>' : "") + '</h2><span class="sub">' +
+        esc([f.fecha ? f.fecha.split("-").reverse().join("/") : "", f.empresa, f.especie, f.moneda, (f.ctgs || []).length + " CTG", c.tn ? afTn(c.tn) + " TN" : "", "neto " + afMoney(c.neto), "total " + afMoney(f.total)].filter(Boolean).join(" · ")) +
+        '</span></div><div class="card-body">' + afDetalle(f, c) + "</div></section>";
+    });
+    if (p.facturas.length) h += '<div class="load-actions"><button class="btn" type="button" id="btnAfDescartar">Descartar</button><button class="btn primary" type="button" id="btnAfGuardar">Guardar ' +
+      (p.facturas.length === 1 ? "la factura" : "las " + p.facturas.length + " facturas") + " en la base</button></div>";
+    else h += '<div class="load-actions"><span></span><button class="btn" type="button" id="btnAfDescartar">Cerrar</button></div>';
+    $("#afPrev").innerHTML = h;
+  }
+  $("#afPrev").addEventListener("click", function(e){
+    if (e.target.closest("#btnAfDescartar")){ afPrev = null; afPrevRender(); return; }
+    if (!e.target.closest("#btnAfGuardar") || !afPrev) return;
+    if (!puedeEscribir()) return;
+    var fs = afPrev.facturas, orden = Date.now();
+    var ops = opsBorrar(function(a){ return a.tipo === "acf" && a.meta && a.meta.f && fs.some(function(f){ return (a.meta.f.prov || a.meta.f.proveedor) === (f.prov || f.proveedor) && a.meta.f.numero === f.numero; }); });
+    fs.forEach(function(f, i){
+      ops.push({set:db.collection("archivos").doc(), data:{nombre:f.proveedor + " " + f.numero, tipo:"acf", partes:0, filas:(f.ctgs || []).length, orden:orden + i,
+        meta:{f:JSON.parse(JSON.stringify(f))}, subidoPor:usuario.email, subidoEn:firebase.firestore.FieldValue.serverTimestamp()}});
+    });
+    setSync("Guardando…", "busy");
+    commitOps(ops).then(function(){
+      toast(fs.length === 1 ? "Factura guardada" : fs.length + " facturas guardadas");
+      afPrev = null; afPrevRender(); afVer("fac");
+    }, errorDb);
+  });
+  $("#fileAf").addEventListener("change", function(e){ afArchivos(e.target.files); e.target.value = ""; });
+  $("#fileAfJson").addEventListener("change", function(e){ if (e.target.files[0]) afImportar(e.target.files[0]); e.target.value = ""; });
+  $("#btnAfCfg").addEventListener("click", function(){
+    if (!puedeEscribir()) return;
+    var cfg = {pactos:{}, bases:{}}, malos = 0;
+    var leer = function(inp, dst, key){
+      var v = inp.value.trim(); if (!v) return;
+      var n = afNum(v.replace("%", ""));
+      if (n == null || n < 0 || n > 100){ malos++; inp.style.borderColor = "var(--bad)"; return; }
+      inp.style.borderColor = ""; dst[inp.getAttribute(key)] = n;
+    };
+    Array.prototype.forEach.call(document.querySelectorAll("[data-afpac]"), function(i){ leer(i, cfg.pactos, "data-afpac"); });
+    Array.prototype.forEach.call(document.querySelectorAll("[data-afbase]"), function(i){ leer(i, cfg.bases, "data-afbase"); });
+    if (malos){ toast("Revisá los valores marcados: tienen que ser números entre 0 y 100"); return; }
+    var ops = opsBorrar(function(a){ return a.tipo === "acfcfg"; });
+    ops.push({set:db.collection("archivos").doc(), data:{nombre:"Descuentos pactados", tipo:"acfcfg", partes:0, filas:0, orden:Date.now(), meta:cfg,
+      subidoPor:usuario.email, subidoEn:firebase.firestore.FieldValue.serverTimestamp()}});
+    if (document.activeElement) document.activeElement.blur();
+    commitOps(ops).then(function(){ toast("Descuentos pactados guardados"); }, errorDb);
+  });
+  $("#btnAfXls").addEventListener("click", function(){
+    if (!downloads){ toast("La descarga no está disponible en esta vista"); return; }
+    var lista = afFiltradas();
+    if (!lista.length){ toast("No hay facturas para descargar"); return; }
+    var h1 = [["Acondicionadora", "Nº factura", "Fecha", "Empresa", "Grano", "Moneda", "TC", "Subtotal", "Descuento %", "Descuento", "Neto", "IVA", "Total", "Toneladas", "Neto en pesos", "$/TN neto", "Estado"]];
+    var h2 = [["Acondicionadora", "Nº factura", "CTG", "Carta de porte", "Ticket", "Kg entrados", "Humedad %"].concat(AF_CONCEPTOS.map(function(k){ return AF_CONCEPTO_TXT[k]; })).concat(["Importe", "$/TN neto"])];
+    lista.forEach(function(f){
+      var c = afCalc(f);
+      h1.push([f.proveedor, f.numero, f.fecha, f.empresa, f.especie, f.moneda, f.tc, f.subtotal, Math.round(c.descPct * 100) / 100, f.descMonto, c.neto, f.iva, f.total,
+        c.tn ? Math.round(c.tn * 1000) / 1000 : null, c.tc != null ? Math.round(c.netoPesos * 100) / 100 : null, c.tn && c.tc != null ? Math.round(c.netoTn / c.tn * 100) / 100 : null, afEstado(f, c).txt]);
+      (f.ctgs || []).forEach(function(x){
+        var tn = x.kgNeto ? x.kgNeto / 1000 : null;
+        h2.push([f.proveedor, f.numero, x.ctg, x.cp, x.ticket, x.kgNeto, x.hum].concat(AF_CONCEPTOS.map(function(k){ return x.conceptos ? x.conceptos[k] || 0 : null; })).concat([x.importe, tn && c.tc != null ? Math.round(x.importe * c.factor * c.tc / tn * 100) / 100 : null]));
+      });
+    });
+    var wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(h1), "Facturas");
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(h2), "CTG");
+    saveFile("Facturas acondicionamiento " + stamp("-") + ".xlsx", XLSX.write(wb, {bookType:"xlsx", type:"array"}), "Excel descargado");
+  });
+
   /* ---------- pestañas ---------- */
-  var TABS = ["resumen", "cargar", "facturas", "acond", "pacond"], tab = "resumen";
+  var TABS = ["resumen", "cargar", "facturas", "acond", "pacond", "afact"], tab = "resumen";
   function showTab(name, focus){
     if (TABS.indexOf(name) < 0) name = "resumen";
     tab = name;
@@ -3243,7 +3939,7 @@
       b.tabIndex = on ? 0 : -1;
       $("#view-" + t).hidden = !on;
     });
-    $("#filterbar").hidden = name === "cargar" || name === "facturas" || name === "acond" || name === "pacond";
+    $("#filterbar").hidden = name === "cargar" || name === "facturas" || name === "acond" || name === "pacond" || name === "afact";
     tipHide();
     try { localStorage.setItem(LS + ".tab", name); } catch(e){}
     try { if (location.hash.slice(1) !== name) history.replaceState(null, "", "#" + name); } catch(e){}
@@ -3292,7 +3988,8 @@
       e.preventDefault(); e.stopPropagation();
       drops.forEach(function(x){ x.classList.remove("over"); });
       if (!e.dataTransfer || !e.dataTransfer.files.length) return;
-      if (d.hasAttribute("data-pmode")) paFile(d.getAttribute("data-pmode"), e.dataTransfer.files[0]);
+      if (d.hasAttribute("data-amode")) afArchivos(e.dataTransfer.files);
+      else if (d.hasAttribute("data-pmode")) paFile(d.getAttribute("data-pmode"), e.dataTransfer.files[0]);
       else if (d.hasAttribute("data-cmode")) handleCpe(e.dataTransfer.files);
       else if (d.hasAttribute("data-fmode")) handleFact(e.dataTransfer.files, d.getAttribute("data-fmode"));
       else handleFiles(e.dataTransfer.files, d.getAttribute("data-mode"));
@@ -3312,6 +4009,7 @@
     drops.forEach(function(x){ x.classList.remove("over"); });
     if (!e.dataTransfer || !e.dataTransfer.files.length) return;
     if (tab === "acond") handleCpe(e.dataTransfer.files);
+    else if (tab === "afact") afArchivos(e.dataTransfer.files);
     else if (tab === "pacond") toast("Soltá el archivo en el cuadro que corresponde (reporte o entregador)");
     else if (tab === "facturas") handleFact(e.dataTransfer.files, "auto");
     else { handleFiles(e.dataTransfer.files, "auto"); showTab("cargar"); }
@@ -3367,6 +4065,7 @@
   factRender();
   acondRender();
   paRender();
+  afRender();
   // Sin nada cargado todavía, se arranca por la carga de archivos
   var sinDatos = !state.rows.length && !state.pend.length && !fact.files.length;
   showTab(TABS.indexOf(inicial) >= 0 ? inicial : (sinDatos ? "cargar" : "resumen"));
