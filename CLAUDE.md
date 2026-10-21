@@ -126,7 +126,7 @@ Facturas de las acondicionadoras (secado, paritaria, zarandeo, fumigación, mezc
   - Si falta un dato (toneladas, TC, neto), la factura queda afuera de esa cuenta y se avisa. Sin neto se estima total ÷ 1,21 y se avisa.
 - **Circuito de pagos:** al cargar factura + detalle se muestra el veredicto (`afVeredicto()`): "Está bien, se puede mandar a pagos" o "No la mandes a pagos" con lo que no cierra (`afProblemas()`: controles en falso y descuento distinto al pactado). Estados en la lista: Lista para pagos / No coincide / Incompleta / Descuento distinto al pactado / Mandada a pagos. El OK final para pagos se da en el sistema de la empresa; acá "Ya la mandé a pagos" solo deja la marca y guarda `meta.f.pagos`, `pagosPor` y `pagosEn`.
 - **Descuento pactado:** se carga por acondicionadora. Si una factura trae otro descuento, queda "Descuento distinto al pactado". Ojo: Vittori trae el descuento metido en el precio de cada línea.
-- **Importar del panel anterior:** un .json con `facturas` en el formato viejo (`afDesdePanel()`). Ese archivo NO va al repositorio (el repo es público y tiene montos y CTG).
+- **Importar del panel anterior:** el cuadro se sacó de la pantalla (Luis no quiere las facturas viejas, 21/10/2026). Queda `afImportar()`/`afDesdePanel()`: soltar un .json de facturas sobre la pestaña todavía lo importa. Ese archivo NO va al repositorio (el repo es público y tiene montos y CTG).
 - **Cómo se guarda:** cada factura es un documento de `archivos` tipo `acf` (datos en `meta.f`, sin `partes`); la misma acondicionadora + número reemplaza a la anterior. Descuentos pactados y humedades base: un documento tipo `acfcfg` (`meta.pactos`, `meta.bases`).
 - **No meter facturas, montos ni CTG reales en el código:** el repositorio es público.
 

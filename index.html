@@ -822,9 +822,9 @@
     </div>
 
     <div id="afv-car" hidden>
-      <section class="load" aria-label="Carga de facturas de acondicionamiento">
+      <section class="load" style="grid-template-columns:1fr" aria-label="Carga de facturas de acondicionamiento">
         <div class="src-box">
-          <div class="src-head"><span class="step">1</span>
+          <div class="src-head">
             <div><h2>Controlar una factura</h2><p>Subí juntos el PDF de la factura y el de su detalle (tickets de entrada). El tablero los cruza CTG por CTG y te dice si está bien para mandar a pagos. La acondicionadora se reconoce sola; hoy el lector conoce: <span id="afProvsTxt"></span>.</p></div>
           </div>
           <label class="drop" data-amode="pdf" for="fileAf">
@@ -832,17 +832,6 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/></svg>
             <strong>Arrastrá o elegí los PDF</strong>
             <span>factura + detalle, .pdf</span>
-          </label>
-        </div>
-        <div class="src-box">
-          <div class="src-head"><span class="step">2</span>
-            <div><h2>Importar facturas del panel anterior</h2><p>El archivo .json con las facturas del Panel de Acondicionamiento. Se carga una sola vez; si una factura ya está, se reemplaza.</p></div>
-          </div>
-          <label class="drop" data-amode="json" for="fileAfJson">
-            <input type="file" id="fileAfJson" accept=".json,application/json">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="m7 8 5-5 5 5"/><path d="M4 15v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4"/></svg>
-            <strong>Elegí el archivo de facturas</strong>
-            <span>.json</span>
           </label>
         </div>
       </section>
@@ -4030,7 +4019,6 @@
     }, errorDb);
   });
   $("#fileAf").addEventListener("change", function(e){ afArchivos(e.target.files); e.target.value = ""; });
-  $("#fileAfJson").addEventListener("change", function(e){ if (e.target.files[0]) afImportar(e.target.files[0]); e.target.value = ""; });
   $("#btnAfCfg").addEventListener("click", function(){
     if (!puedeEscribir()) return;
     var cfg = {pactos:{}, bases:{}}, malos = 0;
