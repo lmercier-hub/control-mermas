@@ -349,6 +349,10 @@
   .af-res .card-body{display:grid;gap:12px}
   tr.af-row{cursor:pointer}
   .af-cfg input{width:90px;font:400 13px/1.2 var(--sans);padding:6px 8px;border:1px solid var(--line-strong);border-radius:6px;background:var(--surface);color:var(--ink)}
+  .af-ver{display:grid;gap:4px;padding:12px 14px;border-radius:10px;font-size:13.5px}
+  .af-ver strong{font-size:15px}
+  .af-ver.ok{background:var(--brand-soft);box-shadow:inset 3px 0 0 var(--brand)}
+  .af-ver.no{background:var(--bad-bg);box-shadow:inset 3px 0 0 var(--bad)}
   .af-avisos{margin:0;padding:10px 14px 10px 30px;border-radius:10px;background:var(--warn-bg);font-size:13px;display:grid;gap:4px}
   @media (prefers-reduced-motion: reduce){*{transition:none!important}}
 </style>
@@ -821,7 +825,7 @@
       <section class="load" aria-label="Carga de facturas de acondicionamiento">
         <div class="src-box">
           <div class="src-head"><span class="step">1</span>
-            <div><h2>Factura y detalle</h2><p>Subí juntos el PDF de la factura y el de su detalle (tickets de entrada). La acondicionadora se reconoce sola. Hoy el lector conoce: <span id="afProvsTxt"></span>.</p></div>
+            <div><h2>Controlar una factura</h2><p>Subí juntos el PDF de la factura y el de su detalle (tickets de entrada). El tablero los cruza CTG por CTG y te dice si está bien para mandar a pagos. La acondicionadora se reconoce sola; hoy el lector conoce: <span id="afProvsTxt"></span>.</p></div>
           </div>
           <label class="drop" data-amode="pdf" for="fileAf">
             <input type="file" id="fileAf" multiple accept=".pdf,application/pdf">
@@ -3588,12 +3592,27 @@
   }
   function afPactado(f){ var v = afCfg.pactos[f.prov || f.proveedor]; return v == null || v === "" ? null : +v; }
   // Estado de una factura para la lista: validada, para revisar o con descuento distinto al pactado
+  // ¿Se puede mandar a pagos? Todos los controles bien, sin datos faltantes y con el descuento pactado
+  function afProblemas(f, c){
+    var out = (f.checks || []).filter(function(k){ return !k.ok; }).map(function(k){ return k.txt; });
+    var pac = afPactado(f);
+    if (pac != null && Math.abs(c.descPct - pac) > 0.05) out.push("El descuento de la factura es " + afPct(c.descPct) + " y el pactado es " + afPct(pac));
+    return out;
+  }
+  function afVeredicto(f, c){
+    var pr = afProblemas(f, c);
+    if (!pr.length) return '<div class="af-ver ok"><strong>✓ Está bien: el detalle coincide con la factura.</strong><span>Se puede mandar al circuito de pagos.' +
+      (c.avisos.length ? " Ojo: " + esc(c.avisos.join("; ")) + "." : "") + "</span></div>";
+    return '<div class="af-ver no"><strong>✗ No la mandes a pagos todavía.</strong>' + pr.map(function(t){ return "<span>• " + esc(t) + "</span>"; }).join("") +
+      "<span>Reclamale a la acondicionadora o revisá que hayas subido el detalle que corresponde.</span></div>";
+  }
   function afEstado(f, c){
+    if (f.pagos) return {cls:"ok", txt:"Mandada a pagos"};
     var pac = afPactado(f);
     if (pac != null && Math.abs(c.descPct - pac) > 0.05) return {cls:"bad", txt:"Descuento distinto al pactado"};
-    if (!f.validada) return {cls:"warn", txt:"Revisar"};
+    if (!f.validada) return {cls:"bad", txt:"No coincide"};
     if (c.avisos.length) return {cls:"warn", txt:"Incompleta"};
-    return {cls:"ok", txt:"Validada"};
+    return {cls:"ok", txt:"Lista para pagos"};
   }
   function afFiltradas(){
     var e = $("#afEmp").value, p = $("#afProv").value, g = $("#afEsp").value;
@@ -3701,7 +3720,7 @@
   }
   function afDetalle(f, c){
     var cs = f.ctgs || [];
-    var h = '<div class="af-det-in"><ul class="af-checks">' + (f.checks || []).map(function(k){ return '<li class="' + (k.ok ? "ok" : "no") + '"><span class="m">' + (k.ok ? "✓" : "✗") + "</span>" + esc(k.txt) + "</li>"; }).join("");
+    var h = '<div class="af-det-in">' + afVeredicto(f, c) + '<ul class="af-checks">' + (f.checks || []).map(function(k){ return '<li class="' + (k.ok ? "ok" : "no") + '"><span class="m">' + (k.ok ? "✓" : "✗") + "</span>" + esc(k.txt) + "</li>"; }).join("");
     var pac = afPactado(f);
     if (pac != null) h += '<li class="' + (Math.abs(c.descPct - pac) <= 0.05 ? "ok" : "no") + '"><span class="m">' + (Math.abs(c.descPct - pac) <= 0.05 ? "✓" : "✗") + "</span>Descuento de la factura " + afPct(c.descPct) + ", pactado " + afPct(pac) + "</li>";
     c.avisos.forEach(function(a){ h += '<li class="no"><span class="m">!</span>' + esc(a) + "</li>"; });
@@ -3716,6 +3735,8 @@
           '<td class="num">' + afMoney(x.importe) + '</td><td class="num">' + (tn && c.tc != null ? afPesos(x.importe * c.factor * c.tc / tn) : "–") + "</td></tr>";
       }).join("") + "</tbody></table></div>";
     h += '<div class="load-actions"><span class="small muted">' + esc([(f.archivos || []).join(", "), f.por ? "cargada por " + f.por.split("@")[0] : ""].filter(Boolean).join(" · ")) + "</span>" +
+      (f.id ? '<label class="chk"><input type="checkbox" data-afpago="' + f.id + '"' + (f.pagos ? " checked" : "") + "> Ya la mandé a pagos" +
+        (f.pagos && f.pagosPor ? " (" + esc(f.pagosPor.split("@")[0]) + ")" : "") + "</label>" : "") +
       (f.id ? '<button class="btn' + (afBorrar === f.id ? " armed" : "") + '" type="button" data-afdel="' + f.id + '">' + (afBorrar === f.id ? "Confirmar: quitar factura" : "Quitar factura") + "</button>" : "") + "</div></div>";
     return h;
   }
@@ -3774,6 +3795,11 @@
   }
   $("#afNav").addEventListener("click", function(e){ var b = e.target.closest("[data-afv]"); if (b) afVer(b.getAttribute("data-afv")); });
   ["#afEmp", "#afProv", "#afEsp", "#afPorMes"].forEach(function(s){ $(s).addEventListener("change", afRender); });
+  $("#afFacBody").addEventListener("change", function(e){
+    var c = e.target.closest("[data-afpago]"); if (!c || !puedeEscribir()) return;
+    var upd = {"meta.f.pagos":c.checked, "meta.f.pagosPor":c.checked ? usuario.email : null, "meta.f.pagosEn":c.checked ? new Date().toISOString() : null};
+    db.collection("archivos").doc(c.getAttribute("data-afpago")).update(upd).then(function(){ toast(c.checked ? "Marcada como mandada a pagos" : "Se sacó la marca de pagos"); }, errorDb);
+  });
   $("#afFacBody").addEventListener("click", function(e){
     var del = e.target.closest("[data-afdel]");
     if (del){
@@ -3883,7 +3909,7 @@
     });
     setSync("Guardando…", "busy");
     commitOps(ops).then(function(){
-      toast(fs.length === 1 ? "Factura guardada" : fs.length + " facturas guardadas");
+      toast(fs.length === 1 ? "Factura guardada. Está en Facturas." : fs.length + " facturas guardadas. Están en Facturas.");
       afPrev = null; afPrevRender(); afVer("fac");
     }, errorDb);
   });

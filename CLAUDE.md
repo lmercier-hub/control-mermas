@@ -122,6 +122,7 @@ Facturas de las acondicionadoras (secado, paritaria, zarandeo, fumigación, mezc
   - $/TN neto = neto ÷ toneladas; $/TN sin descuento; descuento ponderado; paritaria, secado y otros por TN.
   - Secado por punto = secado neto ÷ Σ(TN × (humedad − base)). La base por grano la carga el usuario en "Descuentos pactados"; si no está, no se calcula (no se inventa).
   - Si falta un dato (toneladas, TC, neto), la factura queda afuera de esa cuenta y se avisa. Sin neto se estima total ÷ 1,21 y se avisa.
+- **Circuito de pagos:** al cargar factura + detalle se muestra el veredicto (`afVeredicto()`): "Está bien, se puede mandar a pagos" o "No la mandes a pagos" con lo que no cierra (`afProblemas()`: controles en falso y descuento distinto al pactado). Estados en la lista: Lista para pagos / No coincide / Incompleta / Descuento distinto al pactado / Mandada a pagos. "Ya la mandé a pagos" guarda `meta.f.pagos`, `pagosPor` y `pagosEn`.
 - **Descuento pactado:** se carga por acondicionadora. Si una factura trae otro descuento, queda "Descuento distinto al pactado". Ojo: Vittori trae el descuento metido en el precio de cada línea.
 - **Importar del panel anterior:** un .json con `facturas` en el formato viejo (`afDesdePanel()`). Ese archivo NO va al repositorio (el repo es público y tiene montos y CTG).
 - **Cómo se guarda:** cada factura es un documento de `archivos` tipo `acf` (datos en `meta.f`, sin `partes`); la misma acondicionadora + número reemplaza a la anterior. Descuentos pactados y humedades base: un documento tipo `acfcfg` (`meta.pactos`, `meta.bases`).
