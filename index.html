@@ -3410,8 +3410,17 @@
     return s.length === 12 && s[0] === "0" ? s.slice(1) : s;
   }
   function afBusca(re, txt, grupo){ var m = re.exec(txt); return m ? m[grupo || 1].trim() : ""; }
-  var AF_CONCEPTOS = ["paritaria", "secado", "zarandeo", "fumigacion", "mezcla", "bactericida"];
-  var AF_CONCEPTO_TXT = {paritaria:"Paritaria", secado:"Secado", zarandeo:"Zarandeo", fumigacion:"Fumigación", mezcla:"Mezcla", bactericida:"Bactericida"};
+  var AF_CONCEPTOS = ["paritaria", "secado", "zarandeo", "fumigacion", "mezcla", "bactericida", "otros"];
+  var AF_CONCEPTO_TXT = {paritaria:"Paritaria", secado:"Secado", zarandeo:"Zarandeo", fumigacion:"Fumigación", mezcla:"Mezcla", bactericida:"Bactericida", otros:"Otros"};
+  // Nombre o código de un concepto en la factura → concepto del tablero
+  function afConcepto(t){
+    t = String(t || "").toLowerCase();
+    return /secad/.test(t) ? "secado" : /zaran/.test(t) ? "zarandeo" : /pari/.test(t) ? "paritaria" : /fumig/.test(t) ? "fumigacion" :
+      /mezc/.test(t) ? "mezcla" : /bact/.test(t) ? "bactericida" : "otros";
+  }
+  function afConVacio(){ var o = {}; AF_CONCEPTOS.forEach(function(k){ o[k] = 0; }); return o; }
+  // "TRIG" → "Trigo"
+  var AF_GRANOS = {trig:"Trigo", maiz:"Maíz", "maíz":"Maíz", soja:"Soja", gira:"Girasol", sorg:"Sorgo", ceba:"Cebada"};
   // Empresas del grupo que reciben las facturas
   var AF_EMPRESAS = [
     {nombre:"Economart S.R.L.", test:/economart/i},
@@ -3467,7 +3476,7 @@
           hum:afNum(afBusca(/^\s*Humedad\s+([\d.,]+)/im, t)),
           mermaHumKg:afNum(afBusca(/^\s*Humedad\s+[\d.,]+\s+(\d+)/im, t)),
           kgFinal:afNum(afBusca(/Peso\s+neto\s+(\d+)/i, t)),
-          conceptos:{paritaria:costo("Paritaria"), secado:costo("Secada"), zarandeo:costo("Zaranda"), fumigacion:costo("Fumigaci[oó]n"), mezcla:costo("Mezcla"), bactericida:costo("Bactericida")}
+          conceptos:{paritaria:costo("Paritaria"), secado:costo("Secada"), zarandeo:costo("Zaranda"), fumigacion:costo("Fumigaci[oó]n"), mezcla:costo("Mezcla"), bactericida:costo("Bactericida"), otros:0}
         };
         k.total = AF_CONCEPTOS.reduce(function(s, c){ return s + k.conceptos[c]; }, 0);
         return k;
@@ -3475,7 +3484,61 @@
     },
     // Todavía sin lector: se reconocen para agrupar las facturas importadas y avisar al cargar un PDF
     {id:"vittori", nombre:"Vittori Cereales SRL", corto:"Vittori", test:/vittori/i},
-    {id:"florencia", nombre:"Florencia Cereales SRL", corto:"Florencia", test:/florencia\s+cereales/i},
+    {
+      // Factura con un renglón por concepto y CTG ("Zaranda | CTG N° ..."); el ticket de balanza viene como imagen (se lee con OCR)
+      // y trae los kg, la humedad y el total de servicios por CTG. Cobra los servicios con kilos de grano (canje).
+      id:"florencia", nombre:"Florencia Cereales SRL", corto:"Florencia",
+      test:/florencia\s+cereales|30-?71171735-?4/i,
+      esFactura:function(t){ return /Factura/i.test(t) && /CTG\s*N/i.test(t) && /Total\s+Detalle/i.test(t); },
+      esTicket:function(t){ return /Ticket\s+De\s+Balanza/i.test(t) && /MERMAS\s+SERVICIO/i.test(t); },
+      factura:function(t){
+        var f = {
+          numero:afBusca(/(\d{4,5}-\d{8}(?:-[A-Z])?)/, t),
+          fecha:afFecha(afBusca(/Fecha:\s*(\d{1,2}\/\d{1,2}\/\d{4})/i, t)),
+          vencimiento:afFecha(afBusca(/Vencimientos:[^\n]*\n\s*(\d{1,2}\/\d{1,2}\/\d{4})/i, t)),
+          empresa:afEmpresa(afBusca(/Cliente:\s*(.+)/i, t)),
+          especie:AF_GRANOS[afBusca(/\|\s*([A-Za-z]{3,5})\s+\d{4}\s*\|/, t).toLowerCase()] || "",
+          moneda:/Son\s+D[oó]lares|U\$S|USD/i.test(t) ? "USD" : "ARS",
+          kgCanje:afNum(afBusca(/Kg\s+Descontados\s+por\s+servicios:\s*([\d.]+)/i, t)),
+          lineas:[]
+        };
+        var porCtg = {}, re = /[\d.,]+\s+\S+\s+(\S+)\s+(.+?)\s*\|\s*CTG\s*N\S*\s*(\d{11,12})\s+([\d.,]+)\s+[\d.,]+\s+\$\s*[\d.,]+\s+\$\s*([\d.,]+)/gi, m;
+        while ((m = re.exec(t))){
+          var ctg = afCtg(m[3]), k = afConcepto(m[1] + " " + m[2]);
+          if (!porCtg[ctg]){ porCtg[ctg] = {cp:"", ctg:ctg, importe:0, conceptos:afConVacio(), bonif:0}; f.lineas.push(porCtg[ctg]); }
+          porCtg[ctg].importe += afNum(m[5]); porCtg[ctg].conceptos[k] += afNum(m[5]); porCtg[ctg].bonif = Math.max(porCtg[ctg].bonif, afNum(m[4]) || 0);
+        }
+        f.subtotal = afNum(afBusca(/Total\s+Detalle\s+\$\s*([\d.,]+)/i, t));
+        // Renglón de totales: Subtotal · Monto Base · % IVA · IVA · Total
+        var tt = /\$\s*([\d.,]+)\s+\$\s*([\d.,]+)\s+[\d,]+\s+\$\s*([\d.,]+)\s+\$\s*([\d.,]+)/.exec(t.slice(t.search(/Subtotal\s+Monto\s+Base/i)));
+        if (tt){ f.neto = afNum(tt[2]); f.iva = afNum(tt[3]); f.total = afNum(tt[4]); if (f.subtotal == null) f.subtotal = afNum(tt[1]); }
+        else { f.neto = null; f.iva = 0; f.total = afNum(afBusca(/Total:[\s\S]*?\$\s*([\d.,]+)/i, t)); }
+        f.descMonto = f.subtotal != null && f.neto != null && f.subtotal - f.neto > 1 ? f.subtotal - f.neto : 0;
+        f.descPct = f.descMonto && f.subtotal ? Math.round(f.descMonto / f.subtotal * 10000) / 100 : 0;
+        return f;
+      },
+      ticket:function(t){
+        var kg = function(re){ return afNum(afBusca(re, t)); };
+        var imp = function(rot){ return afNum(afBusca(new RegExp(rot + "[^\\n]*?Importe:?\\s*\\$\\s*([\\d.,]+)", "i"), t)) || 0; };
+        var k = {
+          ticket:afBusca(/Ticket\s+De\s+Balanza:?\s*([\d-]+)/i, t),
+          fecha:"",
+          cp:afBusca(/CARTA\s+DE\s+PORTE\s+NRO\.?\s*(\d{5}-\d{8})/i, t),
+          ctg:afCtg(afBusca(/C\.?\s*T\.?\s*G\.?\s*Nro\.?:?\s*(\d{11,12})/i, t)),
+          especie:AF_GRANOS[afBusca(/CEREAL\/COSECHA\s+([A-Za-z]{3,5})/i, t).toLowerCase()] || "",
+          kgBruto:kg(/PESO\s+BRUTO\s+DEST:?\s*([\d.]+)\s*KG/i),
+          kgTara:kg(/TARA\s+DESTINO:?\s*([\d.]+)\s*KG/i),
+          kgNeto:kg(/PESO\s+DESC\.?:?\s*([\d.]+)\s*KG/i),
+          hum:afNum(afBusca(/HUMEDAD\s*\|?\s*([\d,]+)\s*%/i, t)),
+          kgFinal:kg(/PESO\s+NETO\s+DESCARGADO:?\s*([\d.]+)/i),
+          kgServicio:kg(/TOTAL\s+MERMAS\s+SERVICIO:?\s*([\d.]+)/i),
+          conceptos:null, parcial:{secado:imp("SECADA"), zarandeo:imp("ZARANDEO"), fumigacion:imp("FUMIGADA")}
+        };
+        k.total = afNum(afBusca(/Imponible:?\s*\$\s*([\d.,]+)/i, t));
+        if (k.total == null) k.total = imp("SECADA") + imp("ZARANDEO") + imp("FUMIGADA") + imp("ADICIONAL\\s+Tarifa") + imp("SERV\\.?\\s*ADICIONALES");
+        return k;
+      }
+    },
     {id:"seac", nombre:"SEAC SRL", corto:"SEAC", test:/\bSEAC\b/i},
     {id:"bahia", nombre:"Acondicionadora Cereales Bahia SA", corto:"Cereales Bahía", test:/cereales\s+bah[ií]a/i},
     {id:"agroworld", nombre:"Agro World", corto:"Agro World", test:/agro\s*world/i}
@@ -3497,7 +3560,7 @@
         if (!p){ out.avisos.push(donde + ": no reconozco la acondicionadora. Por ahora el lector conoce: " + afConLector() + "."); return; }
         if (!p.factura){ out.avisos.push(donde + ": es de " + p.corto + ", pero todavía no sé leer sus facturas. Por ahora cargala desde el panel anterior."); return; }
         if (p.esFactura(t)){ var f = p.factura(t); f.prov = p.id; f.archivo = d.nombre; out.facturas.push(f); }
-        else if (p.esTicket(t)){ var k = p.ticket(t); k.prov = p.id; k.archivo = d.nombre; out.tickets.push(k); }
+        else if (p.esTicket(t)){ var k = p.ticket(t); k.prov = p.id; k.archivo = d.nombre; k.ocr = !!(d.ocr && d.ocr[i]); out.tickets.push(k); }
         else out.avisos.push(donde + ": es de " + p.corto + " pero no parece ni una factura ni un ticket de entrada.");
       });
     });
@@ -3515,9 +3578,16 @@
         if (k) usados[k.ctg] = true;
         ctgs.push({ctg:l.ctg, cp:l.cp || (k && k.cp) || "", importe:l.importe, ticket:k ? k.ticket : "", fecha:k ? k.fecha : "",
           kgBruto:k ? k.kgBruto : null, kgTara:k ? k.kgTara : null, kgNeto:k ? k.kgNeto : null, hum:k ? k.hum : null,
-          mermaHumKg:k ? k.mermaHumKg : null, kgFinal:k ? k.kgFinal : null, conceptos:k ? k.conceptos : null});
-        if (!k) ok(false, "CTG " + l.ctg + ": falta su ticket de entrada en el detalle (sin el ticket no hay desglose ni toneladas)");
-        else ok(Math.abs(k.total - l.importe) <= 1, "CTG " + l.ctg + ": el ticket suma $ " + afMoney(k.total) + " y la factura cobra $ " + afMoney(l.importe));
+          mermaHumKg:k ? k.mermaHumKg : null, kgFinal:k ? k.kgFinal : null, kgServicio:k ? k.kgServicio : null, ocr:!!(k && k.ocr),
+          conceptos:l.conceptos || (k ? k.conceptos : null)});
+        if (!k){ ok(false, "CTG " + l.ctg + ": falta su ticket en el detalle (sin el ticket no hay toneladas" + (l.conceptos ? "" : " ni desglose") + ")"); return; }
+        ok(k.total != null && Math.abs(k.total - l.importe) <= 1, "CTG " + l.ctg + ": el ticket suma $ " + afMoney(k.total) + " y la factura cobra $ " + afMoney(l.importe) + (k.ocr ? " (ticket leído de imagen)" : ""));
+        if (k.kgBruto != null && k.kgTara != null && k.kgNeto != null && Math.abs(k.kgBruto - k.kgTara - k.kgNeto) > 1)
+          ok(false, "CTG " + l.ctg + ": en el ticket bruto − tara no da los kg netos (" + k.kgBruto + " − " + k.kgTara + " ≠ " + k.kgNeto + "); revisá los kg");
+        if (l.conceptos && k.parcial) Object.keys(k.parcial).forEach(function(c){
+          if (k.parcial[c] && Math.abs(k.parcial[c] - l.conceptos[c]) > 1) ok(false, "CTG " + l.ctg + ": " + AF_CONCEPTO_TXT[c] + " en el ticket $ " + afMoney(k.parcial[c]) + " y en la factura $ " + afMoney(l.conceptos[c]));
+        });
+        if (l.bonif) ok(true, "CTG " + l.ctg + ": la factura trae " + afPct(l.bonif) + " de bonificación en el renglón");
       });
       var suma = f.lineas.reduce(function(s, l){ return s + (l.importe || 0); }, 0);
       ok(f.lineas.length > 0, f.lineas.length ? f.lineas.length + " CTG en la factura" : "No encontré renglones con CTG en la factura");
@@ -3526,7 +3596,10 @@
       ok(f.neto != null && Math.abs((f.subtotal || 0) - (f.descMonto || 0) - f.neto) <= 1, "Subtotal menos descuento da el neto: $ " + afMoney(f.neto));
       ok(f.neto != null && Math.abs(f.neto * 0.21 - f.iva) <= 1, "IVA 21 % del neto: $ " + afMoney(f.iva));
       ok(f.total != null && Math.abs((f.neto || 0) + (f.iva || 0) - f.total) <= 1, "Neto más IVA da el total: $ " + afMoney(f.total));
-      return {prov:f.prov, proveedor:p.nombre, numero:f.numero, fecha:f.fecha, vencimiento:f.vencimiento, empresa:f.empresa,
+      // Servicios cobrados con kilos de grano: los kg de los tickets tienen que dar lo que descuenta la factura
+      var kgT = ctgs.reduce(function(s2, c){ return c.kgServicio == null ? null : s2 == null ? null : s2 + c.kgServicio; }, 0);
+      if (f.kgCanje && kgT != null && ctgs.length) ok(Math.abs(kgT - f.kgCanje) <= 1, "Kg descontados por servicios: los tickets suman " + kgT + " kg y la factura dice " + f.kgCanje + " kg");
+      return {kgCanje:f.kgCanje || null,prov:f.prov, proveedor:p.nombre, numero:f.numero, fecha:f.fecha, vencimiento:f.vencimiento, empresa:f.empresa,
         especie:afEspecie(f.especie || (leido.tickets.filter(function(k){ return k.prov === f.prov && k.especie; })[0] || {}).especie),
         moneda:f.moneda, tc:null, referencia:f.referencia, subtotal:f.subtotal, descPct:f.descPct || 0, descMonto:f.descMonto || 0,
         neto:f.neto, iva:f.iva, total:f.total, ctgs:ctgs, checks:ch, validada:ch.every(function(c){ return c.ok; }),
@@ -3602,9 +3675,12 @@
   function afVeredicto(f, c){
     var pr = afProblemas(f, c);
     if (!pr.length) return '<div class="af-ver ok"><strong>✓ Está bien: el detalle coincide con la factura.</strong><span>Se puede mandar al circuito de pagos.' +
-      (c.avisos.length ? " Ojo: " + esc(c.avisos.join("; ")) + "." : "") + "</span></div>";
+      (c.avisos.length ? " Ojo: " + esc(c.avisos.join("; ")) + "." : "") + "</span>" + afCanje(f) + "</div>";
     return '<div class="af-ver no"><strong>✗ No la mandes a pagos todavía.</strong>' + pr.map(function(t){ return "<span>• " + esc(t) + "</span>"; }).join("") +
-      "<span>Reclamale a la acondicionadora o revisá que hayas subido el detalle que corresponde.</span></div>";
+      "<span>Reclamale a la acondicionadora o revisá que hayas subido el detalle que corresponde.</span>" + afCanje(f) + "</div>";
+  }
+  function afCanje(f){
+    return f.kgCanje ? "<span><b>Se cobró con grano:</b> la acondicionadora se quedó con " + f.kgCanje + " kg por los servicios (canje). Fijate si igual corresponde mandarla a pagos.</span>" : "";
   }
   function afEstado(f, c){
     if (f.pagos) return {cls:"ok", txt:"Mandada a pagos"};
@@ -3817,13 +3893,32 @@
   });
 
   // Lee los PDF: cada hoja pasa a renglones de texto
-  function afPaginas(file){
+  // Hoja sin números como texto (PDF "impreso" o escaneado): se dibuja grande y se lee con OCR.
+  // El modo 4 (columna de renglones) es el que lee bien las tablas de los tickets.
+  function afOcrHoja(pg, avance){
+    var vp = pg.getViewport({scale:3}), c = document.createElement("canvas");
+    c.width = vp.width; c.height = vp.height;
+    var g = c.getContext("2d"); g.fillStyle = "#fff"; g.fillRect(0, 0, c.width, c.height);
+    return pg.render({canvasContext:g, viewport:vp, intent:"print"}).promise.then(function(){ return ocr(avance); }).then(function(w){
+      return w.setParameters({tessedit_pageseg_mode:"4", tessedit_char_whitelist:""}).then(function(){ return w.recognize(c); });
+    }).then(function(r){ return r.data.text || ""; });
+  }
+  // Devuelve [{t: texto de la hoja, ocr}] de a una hoja por vez (el OCR usa un solo lector)
+  function afPaginas(file, avance){
     return Promise.all([pdfLib(), file.arrayBuffer()]).then(function(x){ return x[0].getDocument({data:x[1]}).promise; }).then(function(doc){
-      var ps = [];
-      for (var i = 1; i <= doc.numPages; i++) ps.push(doc.getPage(i).then(function(pg){
-        return palabrasPdf(pg).then(function(ws){ return renglones(ws).map(function(l){ return l.t; }).join("\n"); });
-      }));
-      return Promise.all(ps);
+      var out = [], i = 0;
+      function sig(){
+        if (++i > doc.numPages) return Promise.resolve(out);
+        return doc.getPage(i).then(function(pg){
+          return palabrasPdf(pg).then(function(ws){
+            var t = renglones(ws).map(function(l){ return l.t; }).join("\n");
+            if ((t.match(/\d/g) || []).length >= 40){ out.push({t:t, ocr:false}); return; }
+            if (avance) avance(file.name + (doc.numPages > 1 ? " (hoja " + i + ")" : "") + ": la hoja es una imagen, la leo con OCR…");
+            return afOcrHoja(pg).then(function(o){ out.push({t:o, ocr:true}); });
+          });
+        }).then(sig);
+      }
+      return sig();
     });
   }
   function afArchivos(fileList){
@@ -3832,14 +3927,19 @@
     if (jsons.length){ afImportar(jsons[0]); return; }
     if (!files.length){ toast("Elegí los PDF de la factura y del detalle"); return; }
     afVer("car");
-    $("#afPrev").innerHTML = '<p class="cpe-prog">Leyendo ' + files.length + (files.length === 1 ? " archivo…" : " archivos…") + "</p>";
-    Promise.all(files.map(function(f){
-      return afPaginas(f).then(function(p){ return {nombre:f.name, paginas:p}; }, function(e){ return {nombre:f.name, paginas:[], error:e && e.message ? e.message : "no se pudo abrir"}; });
-    })).then(function(docs){
+    var prog = function(m){ $("#afPrev").innerHTML = '<p class="cpe-prog" role="status">' + esc(m) + "</p>"; };
+    prog("Leyendo " + files.length + (files.length === 1 ? " archivo…" : " archivos…"));
+    var docs = [];
+    files.reduce(function(pr, f){
+      return pr.then(function(){
+        return afPaginas(f, prog).then(function(p){ docs.push({nombre:f.name, paginas:p.map(function(x){ return x.t; }), ocr:p.map(function(x){ return x.ocr; })}); },
+          function(e){ docs.push({nombre:f.name, paginas:[], error:e && e.message ? e.message : "no se pudo abrir"}); });
+      });
+    }, Promise.resolve()).then(function(){
       var res = afArmar(afLeer(docs.filter(function(d){ return !d.error; })));
       docs.forEach(function(d){
         if (d.error) res.avisos.unshift(d.nombre + ": " + d.error);
-        else if (d.paginas.join("").replace(/\s/g, "").length < 50) res.avisos.unshift(d.nombre + ": el PDF no trae texto (parece escaneado). Pedile a la acondicionadora el PDF original.");
+        else if (d.paginas.join("").replace(/\s/g, "").length < 50) res.avisos.unshift(d.nombre + ": no se pudo leer texto de este PDF.");
       });
       afPrev = {facturas:res.facturas, avisos:res.avisos, origen:"pdf"};
       afPrevRender();
