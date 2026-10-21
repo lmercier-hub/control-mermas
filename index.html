@@ -3588,10 +3588,10 @@
         if (l.conceptos && k.parcial) Object.keys(k.parcial).forEach(function(c){
           if (k.parcial[c] && Math.abs(k.parcial[c] - l.conceptos[c]) > 1) ok(false, "CTG " + l.ctg + ": " + AF_CONCEPTO_TXT[c] + " en el ticket $ " + afMoney(k.parcial[c]) + " y en la factura $ " + afMoney(l.conceptos[c]));
         });
-        // Canje: los kg que se queda la acondicionadora = (servicios + IVA) ÷ precio del grano del ticket
+        // Equivalente en grano que informa el ticket: kg = (servicios + IVA) ÷ precio del grano. Se paga en pesos; es un control más.
         if (k.kgServicio != null && k.precio && k.total != null && f.neto){
           var conIva = k.total * (1 + (f.iva || 0) / f.neto), kgEsp = conIva / k.precio * 1000;
-          ok(Math.abs(kgEsp - k.kgServicio) <= 3, "CTG " + l.ctg + ": se cobró con " + k.kgServicio + " kg de grano a $ " + afMoney(k.precio) + "/TN; los servicios con IVA ($ " + afMoney(conIva) + ") dan " + Math.round(kgEsp) + " kg");
+          ok(Math.abs(kgEsp - k.kgServicio) <= 3, "CTG " + l.ctg + ": el ticket pasa los servicios a " + k.kgServicio + " kg de grano a $ " + afMoney(k.precio) + "/TN; los servicios con IVA ($ " + afMoney(conIva) + ") dan " + Math.round(kgEsp) + " kg");
         }
         if (l.bonif) ok(true, "CTG " + l.ctg + ": la factura trae " + afPct(l.bonif) + " de bonificación en el renglón");
       });
@@ -3610,7 +3610,7 @@
       if (f.kgCanje && ctgs.length && ctgs.every(function(c){ return c.kgServicio != null && c.precio; })){
         valor = ctgs.reduce(function(s2, c){ return s2 + c.kgServicio * c.precio / 1000; }, 0);
         tol = ctgs.reduce(function(s2, c){ return s2 + 3 * c.precio / 1000; }, 0);
-        ok(f.total != null && Math.abs(valor - f.total) <= tol, "El grano entregado vale $ " + afMoney(valor) + " a los precios de los tickets; el total de la factura es $ " + afMoney(f.total));
+        ok(f.total != null && Math.abs(valor - f.total) <= tol, "Los kg de los tickets valen $ " + afMoney(valor) + " a sus precios; el total de la factura es $ " + afMoney(f.total));
       }
       var precioFact = f.kgCanje && f.total ? f.total / f.kgCanje * 1000 : null;
       return {kgCanje:f.kgCanje || null, valorCanje:valor, precioCanje:precioFact,prov:f.prov, proveedor:p.nombre, numero:f.numero, fecha:f.fecha, vencimiento:f.vencimiento, empresa:f.empresa,
@@ -3695,8 +3695,8 @@
   }
   function afCanje(f){
     if (!f.kgCanje) return "";
-    return "<span><b>Se cobró con grano:</b> la acondicionadora se quedó con " + f.kgCanje + " kg por los servicios (canje)" +
-      (f.precioCanje ? ", que equivalen a $ " + afMoney(f.total) + " con IVA: $ " + afMoney(f.precioCanje) + " por tonelada de grano" : "") + ".</span>";
+    return "<span><b>Equivalente en grano (solo informativo, se paga en pesos):</b> la factura expresa los servicios como " + f.kgCanje + " kg" +
+      (f.precioCanje ? ", o sea $ " + afMoney(f.precioCanje) + " por tonelada de grano para el total de $ " + afMoney(f.total) : "") + ".</span>";
   }
   function afEstado(f, c){
     if (f.pagos) return {cls:"ok", txt:"Mandada a pagos"};
