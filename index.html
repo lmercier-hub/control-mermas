@@ -3478,7 +3478,8 @@
       // y trae los kg, la humedad y el total de servicios por CTG. Cobra los servicios con kilos de grano (canje).
       id:"florencia", nombre:"Florencia Cereales SRL", corto:"Florencia",
       test:/florencia\s+cereales|30-?71171735-?4/i,
-      esFactura:function(t){ return /Factura/i.test(t) && /CTG\s*N/i.test(t) && /Total\s+Detalle/i.test(t); },
+      // Puede decir "Factura" o "Fac. Serv. Acondicionamiento (FCE MiPyme)": se reconoce por los renglones con CTG y el "Total Detalle"
+      esFactura:function(t){ return /CTG\s*N\S*\s*\d{11}/i.test(t) && /Total\s+Detalle/i.test(t); },
       esTicket:function(t){ return /Ticket\s+De\s+Balanza/i.test(t) && /MERMAS\s+SERVICIO/i.test(t); },
       factura:function(t){
         var f = {
@@ -3510,7 +3511,7 @@
         var kg = function(re){ return afNum(afBusca(re, t)); };
         var imp = function(rot){ return afNum(afBusca(new RegExp(rot + "[^\\n]*?Importe:?\\s*\\$\\s*([\\d.,]+)", "i"), t)) || 0; };
         var k = {
-          ticket:afBusca(/Ticket\s+De\s+Balanza:?\s*([\d-]+)/i, t),
+          ticket:afBusca(/Ticket\s+De\s+Balanza:?\s*([\d-]+)/i, t).replace(/-/g, "").replace(/^(\d{4})(\d{8})$/, "$1-$2"),
           fecha:"",
           cp:afBusca(/CARTA\s+DE\s+PORTE\s+NRO\.?\s*(\d{5}-\d{8})/i, t),
           ctg:afCtg(afBusca(/C\.?\s*T\.?\s*G\.?\s*Nro\.?:?\s*(\d{11,12})/i, t)),
