@@ -3527,6 +3527,8 @@
         };
         k.total = afNum(afBusca(/Imponible:?\s*\$\s*([\d.,]+)/i, t));
         if (k.total == null) k.total = imp("SECADA") + imp("ZARANDEO") + imp("FUMIGADA") + imp("ADICIONAL\\s+Tarifa") + imp("SERV\\.?\\s*ADICIONALES");
+        // Si el OCR no leyó ningún importe pero hay kg de servicio, el importe queda "sin leer" (no $ 0)
+        if (!k.total && k.kgServicio) k.total = null;
         return k;
       }
     },
@@ -3572,7 +3574,14 @@
           mermaHumKg:k ? k.mermaHumKg : null, kgFinal:k ? k.kgFinal : null, kgServicio:k ? k.kgServicio : null, precio:k ? k.precio || null : null, ocr:!!(k && k.ocr),
           conceptos:l.conceptos || (k ? k.conceptos : null)});
         if (!k){ ok(false, "CTG " + l.ctg + ": falta su ticket en el detalle (sin el ticket no hay toneladas" + (l.conceptos ? "" : " ni desglose") + ")"); return; }
-        ok(k.total != null && Math.abs(k.total - l.importe) <= 1, "CTG " + l.ctg + ": el ticket suma $ " + afMoney(k.total) + " y la factura cobra $ " + afMoney(l.importe) + (k.ocr ? " (ticket leído de imagen)" : ""));
+        var ivaF = f.neto ? 1 + (f.iva || 0) / f.neto : 1.21;
+        if (k.total == null && k.kgServicio && k.precio){
+          // No se pudo leer el importe: se controla con los kg de servicio y el precio del grano del mismo ticket
+          var desdeKg = k.kgServicio * k.precio / 1000 / ivaF, tolKg = 3 * k.precio / 1000 / ivaF;
+          ok(Math.abs(desdeKg - l.importe) <= tolKg, "CTG " + l.ctg + ": no se pudo leer el importe del ticket; sus " + k.kgServicio + " kg a $ " + afMoney(k.precio) +
+            "/TN equivalen a $ " + afMoney(desdeKg) + " sin IVA y la factura cobra $ " + afMoney(l.importe) + " (controlado por kg)");
+        } else ok(k.total != null && Math.abs(k.total - l.importe) <= 1, "CTG " + l.ctg + ": " + (k.total == null ? "no se pudo leer el importe del ticket" : "el ticket suma $ " + afMoney(k.total)) +
+          " y la factura cobra $ " + afMoney(l.importe) + (k.ocr ? " (ticket leído de imagen)" : ""));
         if (k.kgBruto != null && k.kgTara != null && k.kgNeto != null && Math.abs(k.kgBruto - k.kgTara - k.kgNeto) > 1)
           ok(false, "CTG " + l.ctg + ": en el ticket bruto − tara no da los kg netos (" + k.kgBruto + " − " + k.kgTara + " ≠ " + k.kgNeto + "); revisá los kg");
         if (l.conceptos && k.parcial) Object.keys(k.parcial).forEach(function(c){
@@ -3580,7 +3589,7 @@
         });
         // Equivalente en grano que informa el ticket: kg = (servicios + IVA) ÷ precio del grano. Se paga en pesos; es un control más.
         if (k.kgServicio != null && k.precio && k.total != null && f.neto){
-          var conIva = k.total * (1 + (f.iva || 0) / f.neto), kgEsp = conIva / k.precio * 1000;
+          var conIva = k.total * ivaF, kgEsp = conIva / k.precio * 1000;
           ok(Math.abs(kgEsp - k.kgServicio) <= 3, "CTG " + l.ctg + ": el ticket pasa los servicios a " + k.kgServicio + " kg de grano a $ " + afMoney(k.precio) + "/TN; los servicios con IVA ($ " + afMoney(conIva) + ") dan " + Math.round(kgEsp) + " kg");
         }
         if (l.bonif) ok(true, "CTG " + l.ctg + ": la factura trae " + afPct(l.bonif) + " de bonificación en el renglón");
