@@ -854,7 +854,7 @@
   </section>
 </main>
 
-<p class="foot">Los archivos se leen en esta computadora; en la base compartida se guardan solo los datos que usa el tablero. Merma de humedad según la tabla “% de humedad” vigente (con manipuleo). · Versión 13/11/26 b</p>
+<p class="foot">Los archivos se leen en esta computadora; en la base compartida se guardan solo los datos que usa el tablero. Merma de humedad según la tabla “% de humedad” vigente (con manipuleo). · Versión 24/11/26 a</p>
 
 <div class="tip" id="tip" role="status" hidden></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
@@ -906,7 +906,8 @@
   };
   // Código de producto y dimensión valor en Finnegans, y columna de la tabla de humedad
   var GRANOS = [
-    {test:function(p){ return /^ceb|cebada/.test(p) && p.indexOf("forraj") >= 0; }, cod:1934, dim:"COMCEBADAFORRAJERA", tabla:"cebadaforrajera", label:"CEBADA FORRAJERA"},
+    // Forrajera: "Cebada forrajera" o abreviada ("CEBADA FOR" en Entregas del Sur)
+    {test:function(p){ return /^ceb|cebada/.test(p) && (p.indexOf("forraj") >= 0 || /^ceb[a-z]*for/.test(p)); }, cod:1934, dim:"COMCEBADAFORRAJERA", tabla:"cebadaforrajera", label:"CEBADA FORRAJERA"},
     // Cervecera: "Cebada cervecera" o la variedad abreviada ("CEB.MONTOY" en Entregas del Sur). La forrajera siempre dice forrajera.
     {test:function(p){ return /^ceb|cebada/.test(p); }, cod:1178, dim:"COMCEBADACERVECERA", tabla:"cebadacervecera", label:"CEBADA CERVECERA"},
     {test:function(p){ return p.indexOf("soja") >= 0; }, cod:31, dim:"COMSOJA", tabla:"soja", label:"SOJA"},
@@ -1278,8 +1279,9 @@
        origen:hk.indexOf("netofinal"), fin:hk.lastIndexOf("netofinal"), hum:hk.indexOf("hd"), mhAc:hk.indexOf("mermafisicaxhd")}; }},
     {name:"Entregas del Sur",
      test:function(hk){ return has(hk, "cporte") && has(hk, "hdad"); },
+     // Su "Neto" ya viene con la humedad (y "Merm.") descontada: son los kg finales. Lo recibido es Bruto − Tara.
      cols:function(hk){ return {cp:hk.indexOf("cporte"), ctg:hk.indexOf("ctg"), fecha:hk.indexOf("fecha"), prod:hk.indexOf("cereal"),
-       origen:hk.indexOf("neto"), hum:hk.indexOf("hdad"), otras:hk.indexOf("merm")}; }},
+       bruto:hk.indexOf("bruto"), tara:hk.indexOf("tara"), origen:hk.indexOf("neto"), fin:hk.indexOf("neto"), hum:hk.indexOf("hdad")}; }},
     {name:"ACA", needsGrain:true,
      test:function(hk){ return has(hk, "kgnetossm") && has(hk, "ctg"); },
      cols:function(hk){ return {cp:hk.indexOf("cartadeporte"), ctg:hk.indexOf("ctg"), fecha:hk.indexOf("fecha"),
@@ -1315,6 +1317,11 @@
       var id = parseCpCtg(get.cp(row), get.ctg(row));
       if (!id.cp && !id.ctg) return;
       var origen = toNum(get.origen(row));
+      // Si el comprador trae bruto y tara, lo recibido es la diferencia (su "neto" puede venir con mermas descontadas)
+      if (m.bruto >= 0 && m.tara >= 0){
+        var bru = toNum(row[m.bruto]), tar = toNum(row[m.tara]);
+        if (bru > 0 && tar > 0 && bru > tar) origen = bru - tar;
+      }
       if (origen == null || origen <= 0) return; // todavía no descargó
       var prod = get.prod(row) != null ? String(get.prod(row)).trim() : "";
       if (!prod && m.code >= 0) prod = labelPorCodigo(toNum(get.code(row)));

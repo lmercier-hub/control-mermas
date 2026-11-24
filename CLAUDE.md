@@ -47,6 +47,7 @@ los compradores y arma el archivo IMPORTCERT para importar certificados en Finne
   | Cebada cervecera | 1178 | COMCEBADACERVECERA |
   | Cebada forrajera | 1934 | COMCEBADAFORRAJERA |
 
+- La forrajera se reconoce por "forraj" o abreviada ("CEBADA FOR"); cualquier otra cebada (incluida "CEB.MONTOY") es cervecera.
 - Pellets, urea y fertilizantes no son grano y se descartan. AGD se certifica a mano (no tiene perfil).
 
 ## Archivos que reconoce (`PERFILES` en el JS)
@@ -55,7 +56,7 @@ los compradores y arma el archivo IMPORTCERT para importar certificados en Finne
   - **Cargill:** Peso Neto a Certificar, Humedad%, Humedad (kg).
   - **Cargill con hojas Descargas + Calidad.**
   - **Williams Entregas:** dos columnas "Neto Final"; la primera es lo recibido y la última el final.
-  - **Entregas del Sur:** C/ Porte, Hdad, Merm.
+  - **Entregas del Sur:** C/ Porte, Hdad, Bruto, Tara, Neto. Su "Neto" ya viene con la humedad (y "Merm.") descontada: es la descarga final. Por eso kg recibidos = Bruto − Tara y kg finales = Neto (corregido el 24/11/2026; antes tomaba el Neto como recibido y descontaba la humedad dos veces). Verificado contra el certificado de descarga de Sitio 0: bruto 45280 − tara 15680 = 29600, humedad soja 14,2 % → 482 kg por tabla → descarga 29118.
   - **ACA:** Kg.Netos, %Hum., Kg.Netos S/M. No trae grano: se le agrega una columna "Grano" o se elige en la ficha del archivo.
   - **La Costa Cereales:** ya viene en formato IMPORTCERT.
 - **Excel que en realidad son tablas web (HTML guardado como .xls):** por ejemplo el IMPORTCERT que baja La Costa Cereales. Los lee `leerLibro()` como texto, porque el lector de Excel perdía la fila de encabezado (viene sin `<tr>`) y daba vuelta las fechas d/m/aaaa.
@@ -144,7 +145,7 @@ Facturas de las acondicionadoras (secado, paritaria, zarandeo, fumigación, mezc
 - **Quitar y vaciar:** quitar un archivo o "Vaciar todo" borra los documentos de la base para todos.
 
 ## Diseño
-- **Versión visible:** al final del pie de página va "Versión d/m/aa + letra". Cambiarla en cada publicación, así se puede ver si el navegador ya tomó la versión nueva (GitHub Pages y el navegador guardan la anterior unos minutos).
+- **Versión visible:** al final del pie de página va "Versión d/m/aa + letra" (hoy "Versión 24/11/26 a"). Cambiarla en cada publicación, así se puede ver si el navegador ya tomó la versión nueva (GitHub Pages y el navegador guardan la anterior unos minutos).
 - Franja verde AED (`--brand-deep`) con el logo Grupo Duhau embebido como webp, y seis pestañas: Resumen, Cargar archivos, Control de facturas, Acondicionamiento, Pendiente acondicionadora y Facturas de acondicionamiento.
 - Las pestañas "Cartas de porte" y "Pendientes Finnegans" se sacaron porque no se usaban (pedido de Luis, 20/10/2026). Sus vistas (`view-cartas`, `view-pendientes`) siguen en el HTML, ocultas, porque el código las sigue llenando; para volver a mostrarlas hay que reponer el botón en `.tabs` y sumarlas a `TABS`. En el Resumen, las tarjetas de estado y la lista "Para revisar" ya no son enlaces.
 - **Resumen:** seis tarjetas arriba: Listas para el IMPORTCERT, Kg recibidos, Merma de humedad, Otras mermas, Mermas totales y Kg finales. "Mermas totales" = (merma de humedad + otras mermas) ÷ kg recibidos, en %; respeta los filtros de arriba.
