@@ -854,7 +854,7 @@
   </section>
 </main>
 
-<p class="foot">Los archivos se leen en esta computadora; en la base compartida se guardan solo los datos que usa el tablero. Merma de humedad según la tabla “% de humedad” vigente (con manipuleo). · Versión 24/11/26 a</p>
+<p class="foot">Los archivos se leen en esta computadora; en la base compartida se guardan solo los datos que usa el tablero. Merma de humedad según la tabla “% de humedad” vigente (con manipuleo). · Versión 24/11/26 b</p>
 
 <div class="tip" id="tip" role="status" hidden></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
@@ -898,6 +898,7 @@
     fecha:{txt:"Sin fecha de descarga", cls:"warn"},
     cp:{txt:"Sin carta de porte", cls:"warn"},
     mhd:{txt:"Merma de humedad distinta a la tabla", cls:"warn"},
+    hfix:{txt:"Humedad corregida: venía sin la coma (ej. 151 → 15,1)", cls:"warn"},
     dif:{txt:"Difiere de otro archivo", cls:"warn"},
     tab:{txt:"Humedad fuera de tabla", cls:"warn"},
     fin:{txt:"Sin kg finales", cls:"warn"},
@@ -1037,6 +1038,7 @@
     if (g && fin == null && flags.indexOf("tab") < 0) flags.push("fin");
     if (r.otras != null && r.otras < 0) flags.push("neg");
     if (r.mhDif != null) flags.push("mhd");
+    if (r.humFix != null) flags.push("hfix");
     if (!r.ctg) flags.push("ctg");
     if (!r.fecha) flags.push("fecha");
     if (!r.cp) flags.push("cp");
@@ -1326,13 +1328,15 @@
       var prod = get.prod(row) != null ? String(get.prod(row)).trim() : "";
       if (!prod && m.code >= 0) prod = labelPorCodigo(toNum(get.code(row)));
       if (NO_GRANO.test(k(prod))) return;
-      var hum = parseHum(get.hum(row));
+      var hum = parseHum(get.hum(row)), humFix = null;
+      // Humedad cargada sin la coma (151 en lugar de 15,1): se divide por 10 y queda el aviso (confirmado con Luis, 24/11/2026)
+      if (hum != null && hum >= 90 && hum < 400){ humFix = hum; hum = hum / 10; }
       var fin = m.fin >= 0 ? toNum(get.fin(row)) : null;
       if (fin === 0) fin = null;
       var mhAc = m.mhAc >= 0 ? toNum(get.mhAc(row)) : null;
       out.push(derive({
         fecha: parseDate(get.fecha(row)), cp: id.cp, ctg: id.ctg, prod: prod, noProd: !prod,
-        origen: Math.round(origen), hum: hum == null ? null : ceil1(hum),
+        origen: Math.round(origen), hum: hum == null ? null : ceil1(hum), humFix: humFix,
         mhAc: mhAc == null ? null : Math.round(mhAc),
         finAc: fin == null ? null : Math.round(fin),
         otrasDir: m.otras >= 0 ? Math.round(toNum(get.otras(row)) || 0) : null,
@@ -3009,7 +3013,7 @@
   // Campos que se guardan de cada fila (lo demás se recalcula al leer)
   var CAMPOS = {
     fin:["cp", "ctg", "fecha", "cliente", "emp", "prod", "origen"],
-    buy:["fecha", "cp", "ctg", "prod", "noProd", "origen", "hum", "mhAc", "finAc", "otrasDir"],
+    buy:["fecha", "cp", "ctg", "prod", "noProd", "origen", "hum", "humFix", "mhAc", "finAc", "otrasDir"],
     cert:["ctg", "cp", "fecha", "cliente", "prod", "origen", "recibida", "fin", "certif"],
     fac:["ctg", "cp", "prod", "neto"]
   };

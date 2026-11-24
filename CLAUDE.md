@@ -17,6 +17,7 @@ los compradores y arma el archivo IMPORTCERT para importar certificados en Finne
 ## Reglas del negocio (confirmadas con el usuario; no cambiarlas sin que lo pida)
 - **Pantalla:** kg sin separador de miles, humedad con coma decimal (15,1), fechas d/m/aa (6/6/26).
 - **Humedad:** siempre redondeada HACIA ARRIBA a 1 decimal (14,22 → 14,3).
+- **Humedad sin coma:** si un comprador trae 90 o más (ej. 151), se toma ÷ 10 (15,1) y la carta queda con el aviso "Humedad corregida" (no bloquea el IMPORTCERT). Confirmado con Luis el 24/11/2026.
 - **Merma de humedad:** Kg recibidos × % de la tabla "% de humedad" embebida en `TABLA_HUMEDAD`. Esa tabla ya incluye el manipuleo: +0,25 soja/maíz/sorgo/maní, +0,20 girasol/cebadas, +0,10 trigo. Es la misma cuenta que hace Finnegans.
 - **MERMAOTROS:** Kg recibidos − merma por tabla − kg finales que informa el comprador. Así Finnegans termina en los mismos kg finales del comprador.
   - Si la merma del comprador difiere de la tabla en ±1 kg, se toma la del comprador (redondeo).
@@ -145,7 +146,7 @@ Facturas de las acondicionadoras (secado, paritaria, zarandeo, fumigación, mezc
 - **Quitar y vaciar:** quitar un archivo o "Vaciar todo" borra los documentos de la base para todos.
 
 ## Diseño
-- **Versión visible:** al final del pie de página va "Versión d/m/aa + letra" (hoy "Versión 24/11/26 a"). Cambiarla en cada publicación, así se puede ver si el navegador ya tomó la versión nueva (GitHub Pages y el navegador guardan la anterior unos minutos).
+- **Versión visible:** al final del pie de página va "Versión d/m/aa + letra" (hoy "Versión 24/11/26 b"). Cambiarla en cada publicación, así se puede ver si el navegador ya tomó la versión nueva (GitHub Pages y el navegador guardan la anterior unos minutos).
 - Franja verde AED (`--brand-deep`) con el logo Grupo Duhau embebido como webp, y seis pestañas: Resumen, Cargar archivos, Control de facturas, Acondicionamiento, Pendiente acondicionadora y Facturas de acondicionamiento.
 - Las pestañas "Cartas de porte" y "Pendientes Finnegans" se sacaron porque no se usaban (pedido de Luis, 20/10/2026). Sus vistas (`view-cartas`, `view-pendientes`) siguen en el HTML, ocultas, porque el código las sigue llenando; para volver a mostrarlas hay que reponer el botón en `.tabs` y sumarlas a `TABS`. En el Resumen, las tarjetas de estado y la lista "Para revisar" ya no son enlaces.
 - **Resumen:** seis tarjetas arriba: Listas para el IMPORTCERT, Kg recibidos, Merma de humedad, Otras mermas, Mermas totales y Kg finales. "Mermas totales" = (merma de humedad + otras mermas) ÷ kg recibidos, en %; respeta los filtros de arriba.
